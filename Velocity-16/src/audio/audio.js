@@ -55,31 +55,65 @@ class AudioEngine {
         this.isStarted = true;
     }
 
-    // Call this in the game loop with the ship's current speed
-    updateEngine(speed) {
-        if (!this.isStarted) return;
-        // Map speed (0-something) to frequency (50Hz - 200Hz)
-        const freq = 50 + (speed * 0.5);
-        this.engineOsc.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.05);
+    start() { this.init(); }
+    
+    update(speed, dt) {
+        this.updateEngine(speed);
     }
 
-    playLapChime() {
+    onCheckpoint(index) {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
-
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(440, this.ctx.currentTime); // A4
-        osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.2); // A5
-
-        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
-
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(880 + (index * 110), this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
         osc.connect(gain);
-        gain.connect(this.ctx.destination);
-
+        gain.connect(this.masterGain);
         osc.start();
-        osc.stop(this.ctx.currentTime + 0.5);
+        osc.stop(this.ctx.currentTime + 0.1);
+    }
+
+    onLapComplete(ms, isNewBest) {
+        this.playLapChime();
+        if (isNewBest) {
+            // Add a little extra flair for new best
+            setTimeout(() => this.playLapChime(), 150);
+        }
+    }
+
+    onRaceFinish() {
+        // Simple victory "hold" note
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 2);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 2);
+    }
+
+    onBoost() {
+        this.playBoost();
+    }
+
+    playBoost() {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.3);
     }
 }
 
-export const audio = new AudioEngine();
+const audioInstance = new AudioEngine();
+export const audio = audioInstance;
