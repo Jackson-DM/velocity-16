@@ -1,67 +1,77 @@
-// HUD rendering — canvas 2D API drawn AFTER ctx.putImageData().
-// All coordinates are in native canvas pixels (320×224 space).
-// CSS integer scaling is handled externally; draw here as if at 1:1.
+// HUD rendering — drawn on a separate overlay canvas at full display resolution.
+// Text rasterises at the screen's native pixel density, never blurry from CSS upscaling.
 //
-// Layout:
-//   Top-left  : LAP X/N  (line 1)  +  M:SS.mm  (line 2)  +  BEST M:SS.mm  (line 3, once set)
+// drawHUD(hudCtx, scale, lapState, world)
+//   hudCtx : 2D context of the overlay canvas (sized to CSS display dimensions)
+//   scale  : integer CSS scale factor shared with the game canvas (e.g. 4)
+//
+// Layout (in game-pixel units, multiplied by scale internally):
+//   Top-left  : LAP X/N  (line 1) | M:SS.mm  (line 2) | BEST M:SS.mm (line 3)
 //   Top-right : SPD NNN
 
-const FONT      = 'bold 8px monospace';
-const COL_MAIN  = '#FFFF00';   // neon yellow
-const COL_BEST  = '#00FF00';   // neon green — best lap time
-const COL_DONE  = '#FF00FF';   // neon magenta — "FINISHED" state
-const LINE_H    = 10;          // px between HUD text lines
-const MARGIN    = 4;           // px from canvas edge
+const COL_MAIN = '#FFFF00';  // neon yellow
+const COL_BEST = '#00FF00';  // neon green — best lap time
+const COL_DONE = '#FF00FF';  // neon magenta — finished state
 
-// Pad number to 2 digits
 function p2(n) { return String(n).padStart(2, '0'); }
 
-// Format milliseconds as "M:SS.mm"
 function fmtTime(ms) {
-  if (!isFinite(ms)) return '--:--.--';
-  const cs      = Math.floor(ms / 10);
-  const cents   = cs % 100;
-  const totalS  = Math.floor(cs / 100);
-  const secs    = totalS % 60;
-  const mins    = Math.floor(totalS / 60);
+  if (!isFinite(ms) || ms < 0) return '--:--.--';
+  const cs    = Math.floor(ms / 10);
+  const cents = cs % 100;
+  const totS  = Math.floor(cs / 100);
+  const secs  = totS % 60;
+  const mins  = Math.floor(totS / 60);
   return `${mins}:${p2(secs)}.${p2(cents)}`;
 }
 
-// drawHUD — call after ctx.putImageData() each frame.
-export function drawHUD(ctx, lapState, world) {
-  const nowMs      = performance.now();
-  const currentMs  = nowMs - lapState.lapStart;
-  const finished   = lapState.lap >= lapState.totalLaps;
+export function drawHUD(hudCtx, scale, lapState, world) {
+  const W = hudCtx.canvas.width;
+  const H = hudCtx.canvas.height;
 
-  ctx.save();
-  ctx.font         = FONT;
-  ctx.textBaseline = 'top';
-  ctx.shadowColor  = '#000000';
-  ctx.shadowBlur   = 3;
+  hudCtx.clearRect(0, 0, W, H);
 
-  // ── Top-left: lap counter + timer ──────────────────────────────────────────
-  ctx.textAlign = 'left';
+  const nowMs     = performance.now();
+  const finished  = lapState.lap >= lapState.totalLaps;
+  const currentMs = finished ? null : (nowMs - lapState.lapStart);
+
+  // Scale all layout constants by the CSS scale factor so they stay
+  // visually identical to "8px text on a 320px canvas" but render natively.
+  const fontSize = Math.round(8  * scale);
+  const lineH    = Math.round(10 * scale);
+  const margin   = Math.round(4  * scale);
+
+  hudCtx.save();
+  hudCtx.font         = `bold ${fontSize}px "Courier New", monospace`;
+  hudCtx.textBaseline = 'top';
+  hudCtx.shadowColor  = '#000';
+  hudCtx.shadowBlur   = Math.max(2, scale);
+
+  // ── Top-left ───────────────────────────────────────────────────────────────
+  hudCtx.textAlign = 'left';
 
   const displayLap = Math.min(lapState.lap + 1, lapState.totalLaps);
-  ctx.fillStyle = finished ? COL_DONE : COL_MAIN;
-  ctx.fillText(
-    finished ? `FINISHED` : `LAP ${displayLap}/${lapState.totalLaps}`,
-    MARGIN, MARGIN
+  hudCtx.fillStyle = finished ? COL_DONE : COL_MAIN;
+  hudCtx.fillText(
+    finished ? 'FINISHED' : `LAP ${displayLap}/${lapState.totalLaps}`,
+    margin, margin
   );
 
-  ctx.fillStyle = COL_MAIN;
-  ctx.fillText(fmtTime(finished ? 0 : currentMs), MARGIN, MARGIN + LINE_H);
-
-  if (isFinite(lapState.bestMs)) {
-    ctx.fillStyle = COL_BEST;
-    ctx.fillText(`BEST ${fmtTime(lapState.bestMs)}`, MARGIN, MARGIN + LINE_H * 2);
+  if (!finished) {
+    hudCtx.fillStyle = COL_MAIN;
+    hudCtx.fillText(fmtTime(currentMs), margin, margin + lineH);
   }
 
-  // ── Top-right: speed ────────────────────────────────────────────────────────
-  ctx.textAlign = 'right';
-  ctx.fillStyle = COL_MAIN;
-  const spd = String(Math.floor(world.speed)).padStart(3, '0');
-  ctx.fillText(`SPD ${spd}`, 320 - MARGIN, MARGIN);
+  if (isFinite(lapState.bestMs)) {
+    hudCtx.fillStyle = COL_BEST;
+    hudCtx.fillText(`BEST ${fmtTime(lapState.bestMs)}`, margin, margin + lineH * (finished ? 1 : 2));
+  }
 
-  ctx.restore();
+  // ── Top-right: speed ───────────────────────────────────────────────────────
+  hudCtx.textAlign = 'right';
+  hudCtx.fillStyle = COL_MAIN;
+  const spd = String(Math.floor(world.speed)).padStart(3, '0');
+  hudCtx.fillText(`SPD ${spd}`, W - margin, margin);
+
+  hudCtx.restore();
 }

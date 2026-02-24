@@ -15,16 +15,33 @@
       height: 100vh;
       overflow: hidden;
     }
+    /* Wrapper sizes itself to the game canvas via inline-block */
+    #game-wrap {
+      position: relative;
+      display: inline-block;
+      line-height: 0;
+    }
     canvas#game {
-      /* SNES native 320x224, scaled up via CSS — pixel-perfect, no blur */
+      /* SNES native 320×224, CSS integer-scaled — pixel-perfect, no blur */
       image-rendering: pixelated;
       image-rendering: crisp-edges;
       display: block;
     }
+    canvas#hud {
+      /* Overlay at full display resolution — text rasterises natively, never blurry */
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;   /* pass all input through to game */
+      image-rendering: auto;  /* smooth, high-quality text */
+    }
   </style>
 </head>
 <body>
-  <canvas id="game" width="320" height="224"></canvas>
+  <div id="game-wrap">
+    <canvas id="game" width="320" height="224"></canvas>
+    <canvas id="hud"></canvas>
+  </div>
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

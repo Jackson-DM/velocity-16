@@ -1,5 +1,5 @@
 // VELOCITY-16 — Main Game Loop
-// Phase 3: track data + lap logic + HUD + audio hooks wired in.
+// Phase 3: track data + lap logic + HUD overlay + audio hooks.
 
 import { createRenderer }             from './engine/renderer.js';
 import { createCamera, updateCamera } from './engine/camera.js';
@@ -8,19 +8,32 @@ import { perfStart, perfEnd }         from './utils/perf.js';
 import { createWorld }                from './physics/world.js';
 import { updateHover }                from './physics/hover.js';
 import { buildCarSprite }             from './graphics/sprites.js';
+import { drawHUD }                    from './graphics/hud.js';
 import { TRACK_01 }                   from './track/track-data.js';
 import { createLapState, updateLap }  from './track/lap.js';
 import { createAudio }                from './audio/audio.js';
 
-// ─── Canvas setup ─────────────────────────────────────────────────────────────
-const canvas = document.getElementById('game');
+// ─── Canvas + HUD overlay setup ───────────────────────────────────────────────
+const canvas    = document.getElementById('game');
+const hudCanvas = document.getElementById('hud');
+const hudCtx    = hudCanvas.getContext('2d');
+
+let currentScale = 1;  // CSS integer scale, updated in resizeCanvas
 
 function resizeCanvas() {
   const scaleX = window.innerWidth  / canvas.width;
   const scaleY = window.innerHeight / canvas.height;
-  const scale  = Math.max(1, Math.floor(Math.min(scaleX, scaleY)));
-  canvas.style.width  = (canvas.width  * scale) + 'px';
-  canvas.style.height = (canvas.height * scale) + 'px';
+  currentScale = Math.max(1, Math.floor(Math.min(scaleX, scaleY)));
+
+  const displayW = canvas.width  * currentScale;
+  const displayH = canvas.height * currentScale;
+
+  canvas.style.width  = displayW + 'px';
+  canvas.style.height = displayH + 'px';
+
+  // HUD canvas: logical size = CSS display size → text rasterises natively, never blurry
+  hudCanvas.width  = displayW;
+  hudCanvas.height = displayH;
 }
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
@@ -31,8 +44,8 @@ const TILE     = 32;
 
 function buildCheckerTexture() {
   const pixels  = new Uint32Array(TEX_SIZE * TEX_SIZE);
-  const COLOR_A = (0xFF000000 | (160 << 16) | (0   << 8) | 80)  >>> 0;  // deep purple
-  const COLOR_B = (0xFF000000 | (220 << 16) | (240 << 8) | 0)   >>> 0;  // neon cyan
+  const COLOR_A = (0xFF000000 | (160 << 16) | (0   << 8) | 80)  >>> 0;
+  const COLOR_B = (0xFF000000 | (220 << 16) | (240 << 8) | 0)   >>> 0;
 
   for (let ty = 0; ty < TEX_SIZE; ty++) {
     for (let tx = 0; tx < TEX_SIZE; tx++) {
@@ -48,7 +61,6 @@ const floorTexture = buildCheckerTexture();
 
 // ─── World + Camera ───────────────────────────────────────────────────────────
 const world = createWorld();
-// Spawn at track start position
 world.x       = TRACK_01.startX;
 world.y       = TRACK_01.startY;
 world.heading = TRACK_01.startHeading;
@@ -57,20 +69,29 @@ const carSprite = buildCarSprite();
 const renderer  = createRenderer(canvas, carSprite);
 
 const camera = createCamera();
-// Snap camera to start — prevents spring-lerp sweep on load
-camera.x     = world.x;
+camera.x     = world.x;   // snap to start — no spring-lerp sweep on load
 camera.y     = world.y;
 camera.angle = world.heading;
 
 // ─── Lap + Audio ──────────────────────────────────────────────────────────────
 const lapState = createLapState(TRACK_01.totalLaps);
 const audio    = createAudio();
-audio.start();
+
+// Gate audio.start() behind the first user gesture.
+// Browsers block AudioContext creation until an interaction event — this is required.
+let audioStarted = false;
+function ensureAudio() {
+  if (audioStarted) return;
+  audioStarted = true;
+  audio.start();
+}
+window.addEventListener('keydown',     ensureAudio, { once: true });
+window.addEventListener('pointerdown', ensureAudio, { once: true });
 
 // ─── Loop state ───────────────────────────────────────────────────────────────
 let lastTimestamp = 0;
 let frameCount    = 0;
-let wasBoost      = false;  // boost edge-trigger tracking
+let wasBoost      = false;
 
 // ─── Game Loop ────────────────────────────────────────────────────────────────
 function loop(timestamp) {
@@ -82,7 +103,6 @@ function loop(timestamp) {
   const input = getInput();
 
   // ── Physics ────────────────────────────────────────────────────────────────
-  // Snapshot position BEFORE update — used for checkpoint crossing test
   const prevX = world.x;
   const prevY = world.y;
 
@@ -101,13 +121,15 @@ function loop(timestamp) {
     if (ev.type === 'finish')     audio.onRaceFinish();
   }
 
-  // Boost: rising-edge only — fire once per key press, not every frame it's held
   const boostEdge = input.boost && !wasBoost;
   if (boostEdge) audio.onBoost();
   wasBoost = input.boost;
 
   // ── Render ─────────────────────────────────────────────────────────────────
-  renderer.render(camera, floorTexture, world, frameCount++, lapState);
+  renderer.render(camera, floorTexture, world, frameCount++);
+
+  // HUD drawn on overlay canvas at full display resolution (crisp, no upscale blur)
+  drawHUD(hudCtx, currentScale, lapState, world);
 
   perfEnd();
   requestAnimationFrame(loop);

@@ -1,17 +1,17 @@
-// Renderer — owns the Canvas 2D context.
+// Renderer — owns the game Canvas 2D context.
 // Draw order each frame:
-//   1. Sky                (Uint32Array buffer)
-//   2. Floor              (Uint32Array buffer)
-//   3. Speed lines        (Uint32Array buffer)  — WOW #3
-//   4. Car sprite         (Uint32Array buffer)
-//   5. putImageData       (flush buffer to canvas)
-//   6. HUD overlay        (Canvas 2D API — drawn ON TOP of committed pixels)
+//   1. Sky          (Uint32Array buffer)
+//   2. Floor        (Uint32Array buffer)
+//   3. Speed lines  (Uint32Array buffer)  — WOW #3
+//   4. Car sprite   (Uint32Array buffer)
+//   5. putImageData (flush to canvas)
+//
+// HUD is drawn by main.js on a separate overlay canvas after render() returns.
 
-import { renderFloor, renderSky }  from './mode7.js';
-import { blitCarSprite }           from '../graphics/sprites.js';
-import { drawHUD }                 from '../graphics/hud.js';
-import { PALETTE }                 from '../graphics/palette.js';
-import { TOP_SPEED }               from '../physics/hover.js';
+import { renderFloor, renderSky } from './mode7.js';
+import { blitCarSprite }          from '../graphics/sprites.js';
+import { PALETTE }                from '../graphics/palette.js';
+import { TOP_SPEED }              from '../physics/hover.js';
 
 // ─── WOW #3: Speed lines ─────────────────────────────────────────────────────
 const SPEED_LINE_THRESHOLD = TOP_SPEED * 0.8;  // 480 WU/s
@@ -35,8 +35,8 @@ function drawSpeedLines(buffer, W, H, camera, world, frame) {
     const color  = LINE_COLORS[i % 3];
     const rowOff = py * W;
 
-    for (let x = 0; x < maxLen; x++)          buffer[rowOff + x]         = color;
-    for (let x = W - 1; x >= W - maxLen; x--) buffer[rowOff + x]         = color;
+    for (let x = 0; x < maxLen; x++)          buffer[rowOff + x] = color;
+    for (let x = W - 1; x >= W - maxLen; x--) buffer[rowOff + x] = color;
   }
 }
 
@@ -50,15 +50,7 @@ export function createRenderer(canvas, carSprite = null) {
   const buffer    = new Uint32Array(imageData.data.buffer);
 
   return {
-    /**
-     * @param {object}      camera       — camera state (x,y,angle,fov,horizon,height)
-     * @param {object}      floorTexture — { pixels:Uint32Array, width, height, scale }
-     * @param {object|null} world        — hover physics state (speed, drift, …)
-     * @param {number}      frame        — frame counter for stable seeding
-     * @param {object|null} lapState     — lap state; if present, HUD is drawn
-     */
-    render(camera, floorTexture, world = null, frame = 0, lapState = null) {
-      // ── Pixel buffer passes ───────────────────────────────────────────────
+    render(camera, floorTexture, world = null, frame = 0) {
       renderSky(buffer, W, camera.horizon);
       renderFloor(buffer, W, H, camera, floorTexture);
 
@@ -70,13 +62,7 @@ export function createRenderer(canvas, carSprite = null) {
         blitCarSprite(buffer, W, carSprite, world);
       }
 
-      // ── Flush buffer ──────────────────────────────────────────────────────
       ctx.putImageData(imageData, 0, 0);
-
-      // ── HUD overlay (canvas 2D, after flush so it composites on top) ──────
-      if (lapState && world) {
-        drawHUD(ctx, lapState, world);
-      }
     },
 
     get width()  { return W; },
