@@ -1,0 +1,85 @@
+/**
+ * Velocity-16 Audio Engine
+ * 16-bit FM / Oscillator Synthesis
+ */
+
+class AudioEngine {
+    constructor() {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        this.engineOsc = null;
+        this.engineGain = null;
+        this.isStarted = false;
+    }
+
+    init() {
+        if (this.isStarted) return;
+        
+        // Master Gain for overall volume control
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+
+        // Bitcrusher Effect (16-bit simulation)
+        const bufferSize = 4096;
+        this.bitcrusher = this.ctx.createScriptProcessor(bufferSize, 1, 1);
+        this.bitcrusher.onaudioprocess = (e) => {
+            const input = e.inputBuffer.getChannelData(0);
+            const output = e.outputBuffer.getChannelData(0);
+            const bits = 4; // 16-bit depth feel on a 0-1 scale
+            const steps = Math.pow(2, bits);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.round(input[i] * steps) / steps;
+            }
+        };
+
+        // Low-pass Filter for that muffled SNES warmth
+        this.filter = this.ctx.createBiquadFilter();
+        this.filter.type = 'lowpass';
+        this.filter.frequency.setValueAtTime(3000, this.ctx.currentTime);
+        
+        // Engine Hum Setup (Square wave for grit)
+        this.engineOsc = this.ctx.createOscillator();
+        this.engineGain = this.ctx.createGain();
+        
+        this.engineOsc.type = 'square';
+        this.engineOsc.frequency.setValueAtTime(50, this.ctx.currentTime);
+        this.engineGain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        
+        // Routing: Osc -> Gain -> Filter -> Bitcrusher -> Master -> Destination
+        this.engineOsc.connect(this.engineGain);
+        this.engineGain.connect(this.filter);
+        this.filter.connect(this.bitcrusher);
+        this.bitcrusher.connect(this.masterGain);
+        this.masterGain.connect(this.ctx.destination);
+        
+        this.engineOsc.start();
+        this.isStarted = true;
+    }
+
+    // Call this in the game loop with the ship's current speed
+    updateEngine(speed) {
+        if (!this.isStarted) return;
+        // Map speed (0-something) to frequency (50Hz - 200Hz)
+        const freq = 50 + (speed * 0.5);
+        this.engineOsc.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.05);
+    }
+
+    playLapChime() {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(440, this.ctx.currentTime); // A4
+        osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.2); // A5
+
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.5);
+    }
+}
+
+export const audio = new AudioEngine();
