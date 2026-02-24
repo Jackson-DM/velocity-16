@@ -1,13 +1,16 @@
 // VELOCITY-16 — Main Game Loop
-// Phase 2: hover physics → camera spring → render pipeline.
+// Phase 3: track data + lap logic + HUD + audio hooks wired in.
 
-import { createRenderer }            from './engine/renderer.js';
+import { createRenderer }             from './engine/renderer.js';
 import { createCamera, updateCamera } from './engine/camera.js';
-import { getInput }                  from './engine/input.js';
-import { perfStart, perfEnd }        from './utils/perf.js';
-import { createWorld }               from './physics/world.js';
-import { updateHover }               from './physics/hover.js';
-import { buildCarSprite }            from './graphics/sprites.js';
+import { getInput }                   from './engine/input.js';
+import { perfStart, perfEnd }         from './utils/perf.js';
+import { createWorld }                from './physics/world.js';
+import { updateHover }                from './physics/hover.js';
+import { buildCarSprite }             from './graphics/sprites.js';
+import { TRACK_01 }                   from './track/track-data.js';
+import { createLapState, updateLap }  from './track/lap.js';
+import { createAudio }                from './audio/audio.js';
 
 // ─── Canvas setup ─────────────────────────────────────────────────────────────
 const canvas = document.getElementById('game');
@@ -22,12 +25,12 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
-// ─── Procedural floor texture (256×256 neon checkerboard) ────────────────────
+// ─── Procedural floor texture ─────────────────────────────────────────────────
 const TEX_SIZE = 256;
 const TILE     = 32;
 
 function buildCheckerTexture() {
-  const pixels = new Uint32Array(TEX_SIZE * TEX_SIZE);
+  const pixels  = new Uint32Array(TEX_SIZE * TEX_SIZE);
   const COLOR_A = (0xFF000000 | (160 << 16) | (0   << 8) | 80)  >>> 0;  // deep purple
   const COLOR_B = (0xFF000000 | (220 << 16) | (240 << 8) | 0)   >>> 0;  // neon cyan
 
@@ -43,14 +46,31 @@ function buildCheckerTexture() {
 
 const floorTexture = buildCheckerTexture();
 
-// ─── State ────────────────────────────────────────────────────────────────────
-const world     = createWorld();
+// ─── World + Camera ───────────────────────────────────────────────────────────
+const world = createWorld();
+// Spawn at track start position
+world.x       = TRACK_01.startX;
+world.y       = TRACK_01.startY;
+world.heading = TRACK_01.startHeading;
+
 const carSprite = buildCarSprite();
 const renderer  = createRenderer(canvas, carSprite);
-const camera    = createCamera();
 
+const camera = createCamera();
+// Snap camera to start — prevents spring-lerp sweep on load
+camera.x     = world.x;
+camera.y     = world.y;
+camera.angle = world.heading;
+
+// ─── Lap + Audio ──────────────────────────────────────────────────────────────
+const lapState = createLapState(TRACK_01.totalLaps);
+const audio    = createAudio();
+audio.start();
+
+// ─── Loop state ───────────────────────────────────────────────────────────────
 let lastTimestamp = 0;
 let frameCount    = 0;
+let wasBoost      = false;  // boost edge-trigger tracking
 
 // ─── Game Loop ────────────────────────────────────────────────────────────────
 function loop(timestamp) {
@@ -61,9 +81,33 @@ function loop(timestamp) {
 
   const input = getInput();
 
+  // ── Physics ────────────────────────────────────────────────────────────────
+  // Snapshot position BEFORE update — used for checkpoint crossing test
+  const prevX = world.x;
+  const prevY = world.y;
+
   updateHover(world, input, dt);
   updateCamera(camera, world, dt);
-  renderer.render(camera, floorTexture, world, frameCount++);
+
+  // ── Lap logic ──────────────────────────────────────────────────────────────
+  updateLap(lapState, TRACK_01, prevX, prevY, world.x, world.y);
+
+  // ── Audio hooks ────────────────────────────────────────────────────────────
+  audio.update(world.speed, dt);
+
+  for (const ev of lapState.events) {
+    if (ev.type === 'checkpoint') audio.onCheckpoint(ev.index);
+    if (ev.type === 'lap')        audio.onLapComplete(ev.time, ev.isNewBest);
+    if (ev.type === 'finish')     audio.onRaceFinish();
+  }
+
+  // Boost: rising-edge only — fire once per key press, not every frame it's held
+  const boostEdge = input.boost && !wasBoost;
+  if (boostEdge) audio.onBoost();
+  wasBoost = input.boost;
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  renderer.render(camera, floorTexture, world, frameCount++, lapState);
 
   perfEnd();
   requestAnimationFrame(loop);
