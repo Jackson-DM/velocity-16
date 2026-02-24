@@ -55,10 +55,21 @@ class AudioEngine {
         this.isStarted = true;
     }
 
-    start() { this.init(); }
+    start() { 
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+        this.init(); 
+    }
     
-    update(speed, dt) {
-        this.updateEngine(speed);
+    updateEngine(speed) {
+        if (!this.isStarted) return;
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+        // Map speed (0-something) to frequency (50Hz - 200Hz)
+        const freq = 50 + (speed * 0.5);
+        this.engineOsc.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.05);
     }
 
     onCheckpoint(index) {
