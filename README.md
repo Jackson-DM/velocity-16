@@ -1,47 +1,38 @@
-# VELOCITY-16 🏎️💨
+# VELOCITY-16
 
-### A Modern 16-Bit Futuristic Racer
+**A High-Performance Mode 7 Futuristic Racer**
 
-**Velocity-16** is a high-speed, 16-bit futuristic racing game built to capture the soul of the 90s (F-Zero) with the power of 2026 AI. It features a custom **Mode 7 Scanline Engine**, hand-rolled **Hover Physics**, and an integrated **AI Pilot Support** system.
-
----
-
-## 🚀 Key Features
-
-*   **TRON-Hybrid Visuals:** 16-bit SNES aesthetics blended with a modern pulsing neon-grid aesthetic.
-*   **16-Bit FM Synthesis:** A custom audio engine that delivers crunchy, bitcrushed engine groars and galactic rock vibes.
-*   **AI Announcer (ElevenLabs):** A tactical pilot support system that provides real-time feedback on race status and ship integrity.
-*   **Voice-Activated Boost:** Scream "BOOST" to engage the Web Speech API turbo triggers.
+Velocity-16 is a zero-dependency, vanilla JavaScript racing engine inspired by the 16-bit era. It uses per-scanline affine transformations to recreate the iconic "Mode 7" perspective of the Super Nintendo, enhanced with modern AI-driven features.
 
 ---
 
-## 🕹️ Controls (Level 1)
-
-*   **W / Up Arrow:** Accelerate
-*   **S / Down Arrow:** Brake
-*   **A / D or Left/Right:** Steer (Speed-sensitive)
-*   **Space:** Manual Boost
-*   **Voice (WIP):** Shout "BOOST" or "TURBO"
+## 🏎️ Core Pillars
+- **True Mode 7 Engine:** Perspective-correct floor rendering using native HTML5 Canvas `ImageData`.
+- **Brutal Drift Physics:** High-speed handling that rewards precision and momentum management.
+- **AI-Assisted Pilotry:** Integrated Web Speech API for voice-activated "BOOST" commands.
+- **Dynamic Audio:** FM Synthesis engine (Web Audio API) for 174 BPM Drum & Bass aggression.
 
 ---
 
-## 🛠️ Built with The Agency Model
-
-This project is orchestrated through **OpenClaw**, utilizing a squad of specialized sub-agents:
-*   **Lead Engineer:** Claude Code
-*   **Manager / Audio Lead:** Claw (Gemini 3 Flash)
-*   **The Sypte Architect:** Asset & Palette generation
-*   **The Loremaster:** Universe & Character building
+## 🛠️ The Tech Stack
+- **Engine:** Pure Vanilla JS (ES Modules)
+- **Graphics:** Dual-Canvas Architecture (Chunky 16-bit Game View + Crisp 2D HUD)
+- **Palette:** Tron-Hybrid (Neon-Cyan, Magenta, Safety-Orange)
+- **Audio:** Custom 16-bit FM Synthesizer
 
 ---
 
-## 📈 Roadmap
-
-- [x] Phase 1: Mode 7 Core
-- [x] Phase 2: Hover Physics & Car Sprites
-- [x] Phase 3: Track Data, Lap Logic, and FM Sound
-- [ ] Phase 4: Hybrid Track Texture & Energy Systems
-- [ ] Phase 5: ElevenLabs Announcer & Voice Command
+## 🚀 The Roster (Phase 4)
+1. **APEX-RED:** The balanced AI-core flagship.
+2. **JUGGERNAUT-7:** Heavy industrial tank-racer.
+3. **VAPOR-SKIMMER:** Ultra-narrow neon needle.
+4. **MANTIS-RAY:** Organic, iridescent "Swimming" wings.
 
 ---
-*Created by Jackson "Digital" Miller and Claw.*
+
+## 🛠️ Developer Setup
+1. Clone the repo.
+2. Open `index.html` in any modern browser (Chrome recommended for Voice API).
+3. No build steps. No `npm install`. Just raw performance.
+
+*Built by Jackson & Claw (The AI Agency).*
