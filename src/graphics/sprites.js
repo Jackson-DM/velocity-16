@@ -15,7 +15,6 @@ const D = PALETTE.DARK_GRAY;  // shadow
 const _ = 0x00000000;         // transparent (alpha=0)
 
 // ─── 24×16 neutral frame pixel art ───────────────────────────────────────────
-// Each row = 24 entries, 16 rows total
 const NEUTRAL = new Uint32Array([
   // Row  0
   _,_,_,_,_,_,_,_,O,O,O,O,O,O,O,O,_,_,_,_,_,_,_,_,
@@ -53,11 +52,6 @@ const NEUTRAL = new Uint32Array([
 
 // ─── buildCarSprite ──────────────────────────────────────────────────────────
 // Bakes 9 tilt frames via horizontal shear of the neutral sprite.
-//   Frame 0 = hard left  (shearOffset = -4)
-//   Frame 4 = neutral    (shearOffset =  0)
-//   Frame 8 = hard right (shearOffset = +4)
-// For row y: pixel x in dest ← pixel (x - shift) in source, where shift = round(shearOffset * y / 15)
-// Pixels with srcX outside [0, W) remain transparent (default 0).
 export function buildCarSprite() {
   const FW = 24, FH = 16, COUNT = 9;
   const frames = new Uint32Array(FW * FH * COUNT);
@@ -70,7 +64,7 @@ export function buildCarSprite() {
       const shift = Math.round(shearOffset * y / 15);
       for (let x = 0; x < FW; x++) {
         const srcX = x - shift;
-        if (srcX < 0 || srcX >= FW) continue;  // out-of-bounds → transparent
+        if (srcX < 0 || srcX >= FW) continue;
         frames[base + y * FW + x] = NEUTRAL[y * FW + srcX];
       }
     }
@@ -80,25 +74,36 @@ export function buildCarSprite() {
 }
 
 // ─── blitCarSprite ────────────────────────────────────────────────────────────
-// Selects tilt frame from world.drift, writes directly into ImageData Uint32Array.
-// Dest anchor: x=148, y=200 (sprite centered at x=160, near bottom of 320×224 screen)
-export function blitCarSprite(buffer, screenW, sprite, world) {
+// 2× nearest-neighbor upscale: each source pixel becomes a 2×2 block.
+// Scaled size: 48×32. Centered horizontally, flush to bottom with 4px gap.
+// screenW/screenH passed explicitly so this stays stateless.
+export function blitCarSprite(buffer, screenW, screenH, sprite, world) {
   const { frames, frameW, frameH } = sprite;
 
-  // Map drift to frame: +drift → banks right (frame > 4), −drift → banks left (frame < 4)
   const tiltFrame = clamp(4 + Math.round(world.drift / 150 * 4), 0, 8);
   const base = tiltFrame * frameW * frameH;
 
-  const destX = 148;
-  const destY = 200;
+  const SCALE  = 2;
+  const scaledW = frameW * SCALE;  // 48
+  const scaledH = frameH * SCALE;  // 32
+  const destX  = (screenW - scaledW) >> 1;       // 136 on 320px screen — horizontally centred
+  const destY  = screenH - scaledH - 4;          // 188 — flush to bottom with 4px gap
 
   for (let py = 0; py < frameH; py++) {
-    const rowBase = (destY + py) * screenW + destX;
-    const srcRow  = base + py * frameW;
+    const srcRow = base + py * frameW;
     for (let px = 0; px < frameW; px++) {
       const pixel = frames[srcRow + px];
       if ((pixel >>> 24) === 0) continue;  // skip transparent
-      buffer[rowBase + px] = pixel;
+
+      // Write 2×2 block into buffer
+      for (let dy = 0; dy < SCALE; dy++) {
+        const sy = destY + py * SCALE + dy;
+        if (sy < 0 || sy >= screenH) continue;
+        const rowBase = sy * screenW + destX + px * SCALE;
+        for (let dx = 0; dx < SCALE; dx++) {
+          buffer[rowBase + dx] = pixel;
+        }
+      }
     }
   }
 }

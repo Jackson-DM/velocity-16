@@ -6,7 +6,7 @@ export const THRUST     = 720;   // = TOP_SPEED * DRAG_FWD
 export const DRAG_FWD   = 1.2;   // forward drag decay constant — 0.58s to 50% top speed
 export const TOP_SPEED  = 600;   // WU/s target top speed
 export const GRIP       = 3.5;   // lateral decay — ~30% drift ratio at equilibrium
-export const TURN_BASE  = 1.4;   // rad/s at full speed — barely turns when slow
+export const TURN_BASE  = 2.8;   // rad/s — must exceed v/r_min (600/229≈2.62) to navigate tightest oval curve
 export const BRAKE_DRAG = 3.07;  // full stop in ~1.57s
 
 // updateHover — 12-step drift algorithm (order matters: turn BEFORE velocity reproject = drift source)
@@ -19,10 +19,15 @@ export function updateHover(world, input, dt) {
   let fwd =  world.vx * cosH + world.vy * sinH;
   let lat = -world.vx * sinH + world.vy * cosH;
 
-  // 4. Speed-sensitive turn — normSpeed uses last frame's speed (same as sqrt(fwd²+lat²)/TOP_SPEED)
-  const normSpeed = world.speed / TOP_SPEED;
-  if (input.left)  world.heading = wrapAngle(world.heading - TURN_BASE * normSpeed * dt);
-  if (input.right) world.heading = wrapAngle(world.heading + TURN_BASE * normSpeed * dt);
+  // 4. Speed-sensitive turn.
+  // Floor at 0.20 so the car steers even from a standstill — prevents the
+  // "no response at low speed" freeze that felt like broken input.
+  // At top speed turnFactor=1.0, giving the full TURN_BASE rate needed to
+  // navigate the tightest oval curves (r≈229 WU requires ≥2.62 rad/s at 600 WU/s).
+  const normSpeed  = world.speed / TOP_SPEED;
+  const turnFactor = 0.20 + 0.80 * normSpeed;
+  if (input.left)  world.heading = wrapAngle(world.heading - TURN_BASE * turnFactor * dt);
+  if (input.right) world.heading = wrapAngle(world.heading + TURN_BASE * turnFactor * dt);
   // fwd/lat NOT recalculated after heading change — this mismatch IS the drift source
 
   // 5. Thrust

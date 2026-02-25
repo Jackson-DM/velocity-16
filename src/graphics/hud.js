@@ -74,4 +74,42 @@ export function drawHUD(hudCtx, scale, lapState, world) {
   hudCtx.fillText(`SPD ${spd}`, W - margin, margin);
 
   hudCtx.restore();
+
+  // ── Energy bar: F-Zero style, bottom-center ───────────────────────────────
+  const barW   = Math.round(80 * scale);
+  const barH   = Math.round(6  * scale);
+  const segW   = Math.round(8  * scale);
+  const segGap = Math.round(1  * scale);
+  const barX   = Math.round((W - barW) / 2);
+  const barY   = Math.round(H - barH - margin * 2);
+  const filled = Math.round(world.energy * 8);  // 0-8 segments
+
+  hudCtx.save();
+  hudCtx.font          = `bold ${Math.round(6 * scale)}px "Courier New", monospace`;
+  hudCtx.textBaseline  = 'bottom';
+  hudCtx.textAlign     = 'center';
+  hudCtx.shadowColor   = '#000';
+  hudCtx.shadowBlur    = Math.max(2, scale);
+  hudCtx.fillStyle     = COL_MAIN;
+  // Label centered above the bar — no overlap at any scale.
+  hudCtx.fillText('ENERGY', barX + barW / 2, barY - Math.round(2 * scale));
+
+  for (let i = 0; i < 8; i++) {
+    let col;
+    if (i < filled) {
+      col = filled > 4 ? '#00FF40' : filled > 2 ? '#FFFF00' : '#FF2020';
+    } else {
+      col = '#1A1A2A';
+    }
+    hudCtx.fillStyle = col;
+    hudCtx.shadowBlur = 0;
+    hudCtx.fillRect(barX + i * (segW + segGap), barY, segW, barH);
+  }
+
+  // Outline
+  hudCtx.strokeStyle = COL_MAIN;
+  hudCtx.lineWidth   = Math.max(1, scale * 0.5);
+  hudCtx.shadowBlur  = Math.max(2, scale);
+  hudCtx.strokeRect(barX - 1, barY - 1, barW + 2, barH + 2);
+  hudCtx.restore();
 }

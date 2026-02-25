@@ -5,12 +5,16 @@
 
 class AudioEngine {
   constructor() {
-    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Do NOT create AudioContext here — browsers block it before a user gesture.
+    // ctx is created lazily in start(), which is always called after the first keydown.
+    this.ctx = null;
     this.masterGain = null;
     this.filter = null;
     this.bitcrusher = null;
     this.engineOsc = null;
     this.engineGain = null;
+    this.fmMod = null;
+    this.fmDepth = null;
     this.isStarted = false;
   }
 
@@ -46,6 +50,15 @@ class AudioEngine {
     this.engineOsc.frequency.setValueAtTime(60, this.ctx.currentTime);
     this.engineGain.gain.setValueAtTime(0.2, this.ctx.currentTime);
 
+    // FM Modulator: sine at 0.5× carrier, modulates carrier ±20Hz for growl
+    this.fmMod   = this.ctx.createOscillator();
+    this.fmDepth = this.ctx.createGain();
+    this.fmMod.type = 'sine';
+    this.fmMod.frequency.setValueAtTime(30, this.ctx.currentTime);   // 0.5× carrier base 60Hz
+    this.fmDepth.gain.setValueAtTime(20, this.ctx.currentTime);      // ±20Hz modulation depth
+    this.fmMod.connect(this.fmDepth);
+    this.fmDepth.connect(this.engineOsc.frequency);  // modulate carrier frequency
+
     // Chain: Osc -> Gain -> Filter -> Bitcrusher -> Master -> Destination
     this.engineOsc.connect(this.engineGain);
     this.engineGain.connect(this.filter);
@@ -53,23 +66,31 @@ class AudioEngine {
     this.bitcrusher.connect(this.masterGain);
     this.masterGain.connect(this.ctx.destination);
 
+    this.fmMod.start();
     this.engineOsc.start();
     this.isStarted = true;
   }
 
   start() {
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    // Create context on first call (guaranteed post-gesture) then init the graph.
+    if (!this.ctx) {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    } else if (this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
     this.init();
   }
 
   stop() {
-    if (this.ctx.state !== 'closed') this.ctx.suspend();
+    if (this.ctx && this.ctx.state !== 'closed') this.ctx.suspend();
   }
 
   update(speed, dt) {
     if (!this.isStarted || this.ctx.state === 'suspended') return;
     const freq = 60 + (speed * 0.4);
     this.engineOsc.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.05);
+    // FM modulator tracks 0.5× carrier for consistent growl at all speeds
+    this.fmMod.frequency.setTargetAtTime(freq * 0.5, this.ctx.currentTime, 0.05);
   }
 
   onCheckpoint(index) {
@@ -113,6 +134,33 @@ class AudioEngine {
     gain.connect(this.masterGain);
     osc.start();
     osc.stop(this.ctx.currentTime + 2.0);
+  }
+
+  onWallHit() {
+    if (!this.isStarted) return;
+    const t = this.ctx.currentTime;
+
+    // White noise burst (80ms impact thud)
+    const buf = this.ctx.createBuffer(1, (this.ctx.sampleRate * 0.08) | 0, this.ctx.sampleRate);
+    const d   = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    const ns = this.ctx.createBufferSource();
+    const ng = this.ctx.createGain();
+    ns.buffer = buf;
+    ng.gain.setValueAtTime(0.25, t);
+    ng.gain.exponentialRampToValueAtTime(0.01, t + 0.08);
+    ns.connect(ng); ng.connect(this.masterGain); ns.start();
+
+    // Metallic clang: sawtooth pitch-drop 200→55Hz
+    const osc = this.ctx.createOscillator();
+    const og  = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(200, t);
+    osc.frequency.exponentialRampToValueAtTime(55, t + 0.15);
+    og.gain.setValueAtTime(0.18, t);
+    og.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+    osc.connect(og); og.connect(this.masterGain);
+    osc.start(); osc.stop(t + 0.15);
   }
 
   onBoost() {

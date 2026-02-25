@@ -1,17 +1,21 @@
 // VELOCITY-16 — Main Game Loop
-// Phase 3: track data + lap logic + HUD overlay + audio hooks.
+// Phase 4: title screen, circuit texture, collision, voice boost, energy system.
 
 import { createRenderer }             from './engine/renderer.js';
 import { createCamera, updateCamera } from './engine/camera.js';
 import { getInput }                   from './engine/input.js';
 import { perfStart, perfEnd }         from './utils/perf.js';
 import { createWorld }                from './physics/world.js';
-import { updateHover }                from './physics/hover.js';
+import { updateHover, TOP_SPEED }     from './physics/hover.js';
 import { buildCarSprite }             from './graphics/sprites.js';
 import { drawHUD }                    from './graphics/hud.js';
 import { TRACK_01 }                   from './track/track-data.js';
 import { createLapState, updateLap }  from './track/lap.js';
 import { createAudio }                from './audio/audio.js';
+import { buildCircuitTexture }        from './graphics/track-texture.js';
+import { checkCollision }             from './physics/collision.js';
+import { createVoiceBoost }           from './input/voice.js';
+import { drawTitleScreen }            from './graphics/title-screen.js';
 
 // ─── Canvas + HUD overlay setup ───────────────────────────────────────────────
 const canvas    = document.getElementById('game');
@@ -38,26 +42,8 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
-// ─── Procedural floor texture ─────────────────────────────────────────────────
-const TEX_SIZE = 256;
-const TILE     = 32;
-
-function buildCheckerTexture() {
-  const pixels  = new Uint32Array(TEX_SIZE * TEX_SIZE);
-  const COLOR_A = (0xFF000000 | (160 << 16) | (0   << 8) | 80)  >>> 0;
-  const COLOR_B = (0xFF000000 | (220 << 16) | (240 << 8) | 0)   >>> 0;
-
-  for (let ty = 0; ty < TEX_SIZE; ty++) {
-    for (let tx = 0; tx < TEX_SIZE; tx++) {
-      const tileX = (tx / TILE) | 0;
-      const tileY = (ty / TILE) | 0;
-      pixels[ty * TEX_SIZE + tx] = (tileX + tileY) % 2 === 0 ? COLOR_A : COLOR_B;
-    }
-  }
-  return { pixels, width: TEX_SIZE, height: TEX_SIZE, scale: 4 };
-}
-
-const floorTexture = buildCheckerTexture();
+// ─── Circuit floor texture ─────────────────────────────────────────────────────
+const floorTexture = buildCircuitTexture();
 
 // ─── World + Camera ───────────────────────────────────────────────────────────
 const world = createWorld();
@@ -77,16 +63,39 @@ camera.angle = world.heading;
 const lapState = createLapState(TRACK_01.totalLaps);
 const audio    = createAudio();
 
-// Gate audio.start() behind the first user gesture.
-// Browsers block AudioContext creation until an interaction event — this is required.
+// ─── Game state ───────────────────────────────────────────────────────────────
+let gameState = 'title'; // 'title' | 'playing'
+
+// ─── Audio gate (browsers block AudioContext until first user gesture) ────────
 let audioStarted = false;
 function ensureAudio() {
   if (audioStarted) return;
   audioStarted = true;
   audio.start();
 }
-window.addEventListener('keydown',     ensureAudio, { once: true });
-window.addEventListener('pointerdown', ensureAudio, { once: true });
+
+// ─── Voice boost ──────────────────────────────────────────────────────────────
+const voiceBoost = createVoiceBoost(() => {
+  audio.onBoost();
+  // Physics impulse — forward burst in heading direction
+  const BOOST_IMPULSE = 380;
+  world.vx += Math.cos(world.heading) * BOOST_IMPULSE;
+  world.vy += Math.sin(world.heading) * BOOST_IMPULSE;
+  // Clamp to 1.2× TOP_SPEED
+  const cap = TOP_SPEED * 1.2;
+  const spd = Math.sqrt(world.vx * world.vx + world.vy * world.vy);
+  if (spd > cap) { world.vx *= cap / spd; world.vy *= cap / spd; }
+});
+
+// ─── Input listeners ──────────────────────────────────────────────────────────
+window.addEventListener('keydown', () => {
+  ensureAudio();
+  if (gameState === 'title') {
+    gameState = 'playing';
+    voiceBoost.start();
+  }
+});
+window.addEventListener('pointerdown', ensureAudio);
 
 // ─── Loop state ───────────────────────────────────────────────────────────────
 let lastTimestamp = 0;
@@ -100,13 +109,47 @@ function loop(timestamp) {
   const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.05);
   lastTimestamp = timestamp;
 
-  const input = getInput();
+  // ── Title state ─────────────────────────────────────────────────────────────
+  if (gameState === 'title') {
+    renderer.render(camera, floorTexture, null, frameCount++);
+    drawTitleScreen(hudCtx, currentScale, frameCount);
+    perfEnd();
+    requestAnimationFrame(loop);
+    return;
+  }
 
-  // ── Physics ────────────────────────────────────────────────────────────────
+  // ── Playing state ───────────────────────────────────────────────────────────
+  const input = getInput();
   const prevX = world.x;
   const prevY = world.y;
 
   updateHover(world, input, dt);
+
+  // ── Collision check + bounce response ──────────────────────────────────────
+  const col = checkCollision(world);
+  if (col.hit) {
+    const dot = world.vx * col.nx + world.vy * col.ny;
+    if (dot < 0) {
+      // Only bounce when actually moving INTO the wall (dot < 0).
+      // Decompose into normal + tangential, bounce normal with restitution,
+      // keep tangential with wall-friction — prevents the "stuck" freeze.
+      const RESTITUTION = 0.55; // normal component bounces back at 55%
+      const FRICTION    = 0.80; // tangential (slide) component kept at 80%
+      const tx = world.vx - dot * col.nx; // tangential velocity
+      const ty = world.vy - dot * col.ny;
+      world.vx = (-RESTITUTION * dot * col.nx) + (tx * FRICTION);
+      world.vy = (-RESTITUTION * dot * col.ny) + (ty * FRICTION);
+      world.speed = Math.sqrt(world.vx * world.vx + world.vy * world.vy);
+    }
+
+    if (world.wallCooldown <= 0) {
+      world.energy = Math.max(0, world.energy - 0.08 * Math.min(1, Math.abs(dot) / TOP_SPEED));
+      world.wallCooldown = 20;
+      audio.onWallHit();
+    }
+  }
+  if (world.wallCooldown > 0) world.wallCooldown--;
+
   updateCamera(camera, world, dt);
 
   // ── Lap logic ──────────────────────────────────────────────────────────────
