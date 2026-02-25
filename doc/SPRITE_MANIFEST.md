@@ -1,0 +1,125 @@
+# SPRITE_MANIFEST.md - Velocity-16 Asset Registry
+
+## Overview
+This manifest defines the pixel-art data for the core racing machines in Velocity-16. All sprites follow a **24x16** grid.
+
+## Jackson Standard Palettes
+Colors are mapped from `src/graphics/palette.js`:
+- **Apex-Red**: NEON_CYAN / NEON_MAGENTA
+- **Juggernaut-7**: NEON_ORANGE / DARK_GRAY / NEON_YELLOW
+- **Mantis-Ray**: NEON_MAGENTA / VIOLET / NEON_CYAN
+- **Vapor-Skimmer**: NEON_GREEN / TEAL / WHITE
+
+## 1. Apex-Red (Pilot: Jackson)
+The balanced AI-core racer. Pulsing cyan frame.
+
+```javascript
+/* Apex-Red Neutral (24x16) */
+// C = NEON_CYAN, M = NEON_MAGENTA, O = BLACK, W = WHITE, G = ENGINE_GLOW
+const APEX_RED_NEUTRAL = [
+  _,_,_,_,_,_,_,_,O,O,O,O,O,O,O,O,_,_,_,_,_,_,_,_,
+  _,_,_,_,_,O,O,O,C,C,C,C,C,C,C,C,O,O,O,_,_,_,_,_,
+  _,_,_,O,O,C,C,C,C,C,M,M,C,C,C,C,C,C,C,O,O,_,_,_,
+  _,_,O,C,C,C,C,C,C,C,W,M,C,C,C,C,C,C,C,C,C,O,_,_,
+  _,O,C,C,C,C,C,M,M,C,C,C,C,M,M,C,C,C,C,C,C,C,O,_,
+  O,C,C,C,C,C,M,M,M,C,C,C,C,M,M,M,C,C,C,C,C,C,C,O,
+  O,C,C,C,C,M,M,M,M,C,C,C,C,M,M,M,M,C,C,C,C,C,C,O,
+  O,D,C,C,C,M,G,G,M,C,C,C,C,M,G,G,M,C,C,C,D,D,C,O,
+  O,D,D,C,C,G,G,G,G,C,C,C,C,G,G,G,G,C,C,D,D,D,C,O,
+  O,D,D,D,G,G,Y,G,G,C,C,C,C,G,G,Y,G,G,D,D,D,D,O,O,
+  _,O,D,D,G,G,Y,G,G,D,D,D,D,G,G,Y,G,G,D,D,D,O,O,_,
+  _,_,O,D,D,G,G,G,G,D,D,D,D,G,G,G,G,D,D,D,O,O,_,_,
+  _,_,_,O,O,D,D,G,G,D,D,D,D,G,G,D,D,D,O,O,O,_,_,_,
+  _,_,_,_,_,O,O,D,G,G,D,D,G,G,D,D,O,O,O,_,_,_,_,_,
+  _,_,_,_,_,_,_,O,O,G,G,G,G,O,O,O,O,_,_,_,_,_,_,_,
+  _,_,_,_,_,_,_,_,_,O,O,O,O,O,_,_,_,_,_,_,_,_,_,_,
+];
+```
+
+## 2. Juggernaut-7 (Pilot: Unit-X)
+Brutalist slab of orange metal. Heavy and wide.
+
+```javascript
+/* Juggernaut-7 Neutral (24x16) */
+// A = NEON_ORANGE, D = DARK_GRAY, Y = NEON_YELLOW
+const JUGGERNAUT_7_NEUTRAL = [
+  _,_,_,_,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,_,_,_,_,
+  _,_,_,O,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,O,_,_,_,
+  _,_,O,A,A,A,A,A,A,A,D,D,A,A,A,A,A,A,A,A,A,O,_,_,
+  _,O,A,A,A,A,A,A,A,A,W,D,A,A,A,A,A,A,A,A,A,A,O,_
+  O,A,A,A,A,D,D,D,A,A,D,D,A,A,D,D,D,A,A,A,A,A,A,O
+  O,A,A,A,A,D,D,D,A,A,A,A,A,A,D,D,D,A,A,A,A,A,A,O
+  O,A,A,A,D,D,D,D,D,A,A,A,A,D,D,D,D,D,A,A,A,A,A,O
+  O,D,A,A,D,G,G,G,D,A,A,A,A,D,G,G,G,D,A,A,D,D,A,O
+  O,D,D,A,G,G,Y,G,G,A,A,A,A,G,G,Y,G,G,A,D,D,D,A,O
+  O,D,D,D,G,G,Y,G,G,D,D,D,D,G,G,Y,G,G,D,D,D,D,D,O
+  O,O,D,D,G,G,G,G,D,D,D,D,D,D,G,G,G,G,D,D,D,D,O,O
+  _,O,O,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,D,O,O,O,_
+  _,_,O,O,D,D,D,D,D,D,D,D,D,D,D,D,D,D,O,O,O,_,_,_
+  _,_,_,O,O,O,D,D,D,D,D,D,D,D,D,D,O,O,O,_,_,_,_,_
+  _,_,_,_,_,O,O,O,O,O,O,O,O,O,O,O,O,_,_,_,_,_,_,_
+  _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_
+];
+```
+
+## 3. Mantis-Ray (Pilot: Unknown)
+Organic magenta shimmer. Wings swim through air.
+
+```javascript
+/* Mantis-Ray Neutral (24x16) */
+// M = NEON_MAGENTA, V = VIOLET, C = NEON_CYAN
+const MANTIS_RAY_NEUTRAL = [
+  _,_,_,_,_,_,_,_,_,O,O,O,O,_,_,_,_,_,_,_,_,_,_,_
+  _,_,_,_,_,_,_,_,O,M,M,M,M,O,_,_,_,_,_,_,_,_,_,_
+  _,_,_,_,_,O,O,O,M,M,V,V,M,M,O,O,O,_,_,_,_,_,_,_
+  _,_,_,_,O,M,M,M,M,M,W,V,M,M,M,M,M,O,_,_,_,_,_,_
+  _,_,_,O,M,M,M,V,V,M,V,V,M,V,V,M,M,M,O,_,_,_,_,_
+  _,_,O,M,M,V,V,V,V,M,M,M,M,V,V,V,V,M,M,O,_,_,_,_
+  _,O,M,V,V,V,V,V,V,C,C,C,C,V,V,V,V,V,V,M,O,_,_,_
+  O,M,V,V,V,V,C,C,V,C,C,C,C,V,C,C,V,V,V,V,M,O,_,_
+  O,M,V,V,C,C,G,G,C,C,C,C,C,C,G,G,C,C,V,V,M,O,_,_
+  O,D,V,C,G,G,Y,G,G,C,C,C,C,G,G,Y,G,G,C,V,D,O,_,_
+  _,O,D,C,G,G,Y,G,G,D,D,D,D,G,G,Y,G,G,C,D,O,_,_,_
+  _,_,O,D,G,G,G,G,D,D,D,D,D,D,G,G,G,G,D,O,_,_,_,_
+  _,_,_,O,D,D,D,D,D,D,D,D,D,D,D,D,D,D,O,_,_,_,_,_
+  _,_,_,_,O,O,D,D,D,D,D,D,D,D,D,D,O,O,_,_,_,_,_,_
+  _,_,_,_,_,_,O,O,O,O,O,O,O,O,O,O,_,_,_,_,_,_,_,_
+  _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_
+];
+```
+
+## 4. Vapor-Skimmer (Pilot: Lyra-Neon)
+Narrowest profile. Lime green and neon green.
+
+```javascript
+/* Vapor-Skimmer Neutral (24x16) */
+// L = NEON_GREEN, T = TEAL, W = WHITE
+const VAPOR_SKIMMER_NEUTRAL = [
+  _,_,_,_,_,_,_,_,_,_,O,O,_,_,_,_,_,_,_,_,_,_,_,_
+  _,_,_,_,_,_,_,_,_,O,L,L,O,_,_,_,_,_,_,_,_,_,_,_
+  _,_,_,_,_,_,_,_,O,L,L,L,L,O,_,_,_,_,_,_,_,_,_,_
+  _,_,_,_,_,_,_,O,L,L,L,L,L,L,O,_,_,_,_,_,_,_,_,_
+  _,_,_,_,_,_,O,L,L,L,W,T,L,L,L,O,_,_,_,_,_,_,_,_
+  _,_,_,_,_,O,L,L,T,T,T,T,T,T,L,L,O,_,_,_,_,_,_,_
+  _,_,_,_,O,L,L,T,T,T,T,T,T,T,T,L,L,O,_,_,_,_,_,_
+  _,_,_,O,L,L,T,T,G,G,T,T,G,G,T,T,L,L,O,_,_,_,_,_
+  _,_,O,L,L,T,G,G,G,G,T,T,G,G,G,G,T,L,L,O,_,_,_,_
+  _,O,L,L,G,G,G,Y,G,G,D,D,G,G,Y,G,G,G,L,L,O,_,_,_
+  _,O,D,L,G,G,Y,G,G,D,D,D,D,G,G,Y,G,G,L,D,O,_,_,_
+  _,_,O,D,G,G,G,G,D,D,D,D,D,D,G,G,G,G,D,O,_,_,_,_
+  _,_,_,O,O,D,D,D,D,D,D,D,D,D,D,D,D,O,O,_,_,_,_,_
+  _,_,_,_,_,O,O,D,D,D,D,D,D,D,D,O,O,_,_,_,_,_,_,_
+  _,_,_,_,_,_,_,O,O,O,O,O,O,O,O,_,_,_,_,_,_,_,_,_
+  _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_
+];
+```
+
+## Shearing Logic (Tilt-Left / Tilt-Right)
+Sprites implement the **Velocity-16 Shearing Standard** defined in `src/graphics/sprites.js`.
+
+For a 16-high sprite:
+- **Neutral**: `shift = 0`
+- **Tilt (Step s)**: `shift = round(shearOffset[s] * y / 15)`
+- `shearOffset` ranges from **-4 (Hard Left)** to **+4 (Hard Right)**.
+
+This creates the iconic "banking" effect without requiring unique hand-drawn frames for every angle.
