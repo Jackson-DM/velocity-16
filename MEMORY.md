@@ -15,11 +15,14 @@
 - **Core Pillars:** Extreme speed, high-friction "drift" physics, zero-dependency Mode 7 renderer.
 - **Lore Context:** Set in the "Cyber Napa" circuit across the "New Galaxy" league.
 - **Pilot Roster (7 total):**
-  1. Jackson "Digital" Miller (Machine: Velocity-16) - *Lead Architect*
+  1. Jackson "Digital" Miller (Machine: Apex-Red) - *Lead Architect (Heterochromia, Muscular)*
   2. "Baron" Von Stryker (Machine: Iron Vulture) - *Fallen Ace*
   3. Xylar the Exiled (Machine: Plasma Reef) - *Galactic Outcast*
-  4. Master-Remix (Machine: Neon Symphony) - *Extravagant AI/DJ*
-  5. *[Pending]* (Candidates from blueprints: Lyra-Neon, Unit-X)
+  4. Master-Remix (Machine: Neon Symphony) - *Extravagant AI/DJ / 'Sonic Architect'*
+  5. Lyra-Neon (Machine: Vapor-Skimmer) - *Neon Speedster*
+  6. Unit-X (Machine: Juggernaut-7) - *Brutalist Heavy (Massive buildup)*
+  7. Mantis (Machine: Mantis-Ray) - *Secret Organic Entry*
+- **Sonic Blueprint:** 174 BPM master pulse; Sullivan King growls x Daft Punk French House; 16-bit SNES bitcrushing.
 
 ## About Leon Coe (Jackson's Mentor)
 - Founder: Houston AI Club (3,000+ members), Amplify Intelligence, AI-First
@@ -38,6 +41,7 @@
 - Claude Code in Cursor: logged in, project CoopBuddy-AI-Agent on Desktop
 - DigitalOcean droplet available (SSH, shared password: jackson1openai)
 - OpenRouter API key set up ($25 budget) — supports Anthropic, Gemini, GPT
+- ChatGPT Plus ($20/mo): Access to Codex 5.3 (Confirmed 2026-02-25)
 - Telegram integration: active
 
 ## About Me (Claw)

@@ -9,6 +9,9 @@ Colors are mapped from `src/graphics/palette.js`:
 - **Juggernaut-7**: NEON_ORANGE / DARK_GRAY / NEON_YELLOW
 - **Mantis-Ray**: NEON_MAGENTA / VIOLET / NEON_CYAN
 - **Vapor-Skimmer**: NEON_GREEN / TEAL / WHITE
+- **Iron Vulture**: NEON_ORANGE / DARK_GRAY / BLOOD_RED (Accent)
+- **Plasma Reef**: VIOLET / NEON_CYAN / WHITE
+- **Neon Symphony**: NEON_MAGENTA / GOLD (NEON_YELLOW) / WHITE
 
 ## 1. Apex-Red (Pilot: Jackson)
 The balanced AI-core racer. Pulsing cyan frame.
@@ -18,21 +21,21 @@ The balanced AI-core racer. Pulsing cyan frame.
 // C = NEON_CYAN, M = NEON_MAGENTA, O = BLACK, W = WHITE, G = ENGINE_GLOW
 const APEX_RED_NEUTRAL = [
   _,_,_,_,_,_,_,_,O,O,O,O,O,O,O,O,_,_,_,_,_,_,_,_,
-  _,_,_,_,_,O,O,O,C,C,C,C,C,C,C,C,O,O,O,_,_,_,_,_,
-  _,_,_,O,O,C,C,C,C,C,M,M,C,C,C,C,C,C,C,O,O,_,_,_,
-  _,_,O,C,C,C,C,C,C,C,W,M,C,C,C,C,C,C,C,C,C,O,_,_,
-  _,O,C,C,C,C,C,M,M,C,C,C,C,M,M,C,C,C,C,C,C,C,O,_,
-  O,C,C,C,C,C,M,M,M,C,C,C,C,M,M,M,C,C,C,C,C,C,C,O,
-  O,C,C,C,C,M,M,M,M,C,C,C,C,M,M,M,M,C,C,C,C,C,C,O,
-  O,D,C,C,C,M,G,G,M,C,C,C,C,M,G,G,M,C,C,C,D,D,C,O,
-  O,D,D,C,C,G,G,G,G,C,C,C,C,G,G,G,G,C,C,D,D,D,C,O,
-  O,D,D,D,G,G,Y,G,G,C,C,C,C,G,G,Y,G,G,D,D,D,D,O,O,
-  _,O,D,D,G,G,Y,G,G,D,D,D,D,G,G,Y,G,G,D,D,D,O,O,_,
-  _,_,O,D,D,G,G,G,G,D,D,D,D,G,G,G,G,D,D,D,O,O,_,_,
-  _,_,_,O,O,D,D,G,G,D,D,D,D,G,G,D,D,D,O,O,O,_,_,_,
-  _,_,_,_,_,O,O,D,G,G,D,D,G,G,D,D,O,O,O,_,_,_,_,_,
-  _,_,_,_,_,_,_,O,O,G,G,G,G,O,O,O,O,_,_,_,_,_,_,_,
-  _,_,_,_,_,_,_,_,_,O,O,O,O,O,_,_,_,_,_,_,_,_,_,_,
+  _,_,_,_,_,O,O,O,C,C,C,C,C,C,C,C,O,O,O,_,_,_,_,_
+  _,_,_,O,O,C,C,C,C,C,M,M,C,C,C,C,C,C,C,O,O,_,_,_
+  _,_,O,C,C,C,C,C,C,C,W,M,C,C,C,C,C,C,C,C,C,O,_,_
+  _,O,C,C,C,C,C,M,M,C,C,C,C,M,M,C,C,C,C,C,C,C,O,_
+  O,C,C,C,C,C,M,M,M,C,C,C,C,M,M,M,C,C,C,C,C,C,C,O
+  O,C,C,C,C,M,M,M,M,C,C,C,C,M,M,M,M,C,C,C,C,C,C,O
+  O,D,C,C,C,M,G,G,M,C,C,C,C,M,G,G,M,C,C,C,D,D,C,O
+  O,D,D,C,C,G,G,G,G,C,C,C,C,G,G,G,G,C,C,D,D,D,C,O
+  O,D,D,D,G,G,Y,G,G,C,C,C,C,G,G,Y,G,G,D,D,D,D,O,O
+  _,O,D,D,G,G,Y,G,G,D,D,D,D,G,G,Y,G,G,D,D,D,O,O,_
+  _,_,O,D,D,G,G,G,G,D,D,D,D,G,G,G,G,D,D,D,O,O,_,_
+  _,_,_,O,O,D,D,G,G,D,D,D,D,G,G,D,D,D,O,O,O,_,_,_
+  _,_,_,_,_,O,O,D,G,G,D,D,G,G,D,D,O,O,O,_,_,_,_,_
+  _,_,_,_,_,_,_,O,O,G,G,G,G,O,O,O,O,_,_,_,_,_,_,_
+  _,_,_,_,_,_,_,_,_,O,O,O,O,O,_,_,_,_,_,_,_,_,_,_
 ];
 ```
 
@@ -43,9 +46,9 @@ Brutalist slab of orange metal. Heavy and wide.
 /* Juggernaut-7 Neutral (24x16) */
 // A = NEON_ORANGE, D = DARK_GRAY, Y = NEON_YELLOW
 const JUGGERNAUT_7_NEUTRAL = [
-  _,_,_,_,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,_,_,_,_,
-  _,_,_,O,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,O,_,_,_,
-  _,_,O,A,A,A,A,A,A,A,D,D,A,A,A,A,A,A,A,A,A,O,_,_,
+  _,_,_,_,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,O,_,_,_,_
+  _,_,_,O,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,A,O,_,_,_
+  _,_,O,A,A,A,A,A,A,A,D,D,A,A,A,A,A,A,A,A,A,O,_,_
   _,O,A,A,A,A,A,A,A,A,W,D,A,A,A,A,A,A,A,A,A,A,O,_
   O,A,A,A,A,D,D,D,A,A,D,D,A,A,D,D,D,A,A,A,A,A,A,O
   O,A,A,A,A,D,D,D,A,A,A,A,A,A,D,D,D,A,A,A,A,A,A,O
@@ -93,7 +96,7 @@ Narrowest profile. Lime green and neon green.
 
 ```javascript
 /* Vapor-Skimmer Neutral (24x16) */
-// L = NEON_GREEN, T = TEAL, W = WHITE
+// L = NEON_GREEN, T = TEAL, W = WHITE, G = ENGINE_GLOW, Y = NEON_YELLOW, D = DARK_GRAY
 const VAPOR_SKIMMER_NEUTRAL = [
   _,_,_,_,_,_,_,_,_,_,O,O,_,_,_,_,_,_,_,_,_,_,_,_
   _,_,_,_,_,_,_,_,_,O,L,L,O,_,_,_,_,_,_,_,_,_,_,_
@@ -106,6 +109,84 @@ const VAPOR_SKIMMER_NEUTRAL = [
   _,_,O,L,L,T,G,G,G,G,T,T,G,G,G,G,T,L,L,O,_,_,_,_
   _,O,L,L,G,G,G,Y,G,G,D,D,G,G,Y,G,G,G,L,L,O,_,_,_
   _,O,D,L,G,G,Y,G,G,D,D,D,D,G,G,Y,G,G,L,D,O,_,_,_
+  _,_,O,D,G,G,G,G,D,D,D,D,D,D,G,G,G,G,D,O,_,_,_,_
+  _,_,_,O,O,D,D,D,D,D,D,D,D,D,D,D,D,O,O,_,_,_,_,_
+  _,_,_,_,_,O,O,D,D,D,D,D,D,D,D,O,O,_,_,_,_,_,_,_
+  _,_,_,_,_,_,_,O,O,O,O,O,O,O,O,_,_,_,_,_,_,_,_,_
+  _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_
+];
+```
+
+## 5. Iron Vulture (Pilot: Baron Von Stryker)
+Serrated, military-grade frame. Weathered matte black with blood-orange accents.
+
+```javascript
+/* Iron Vulture Neutral (24x16) */
+// R = NEON_ORANGE (Blood), D = DARK_GRAY, W = WHITE, G = ENGINE_GLOW
+const IRON_VULTURE_NEUTRAL = [
+  _,_,_,O,O,_,_,_,_,_,_,_,_,_,_,_,_,_,_,O,O,_,_,_
+  _,_,O,D,D,O,_,_,_,_,O,O,O,O,_,_,_,_,O,D,D,O,_,_
+  _,_,O,D,D,D,O,_,_,O,D,D,D,D,O,_,_,O,D,D,D,O,_,_
+  _,O,D,D,D,D,D,O,O,D,D,D,D,D,D,O,O,D,D,D,D,D,O,_
+  _,O,D,D,R,R,D,D,D,D,W,D,D,D,D,D,D,D,R,R,D,D,O,_
+  O,D,D,R,R,R,R,D,D,D,D,D,D,D,D,D,D,R,R,R,R,D,D,O
+  O,D,D,R,R,R,R,R,D,D,D,D,D,D,D,D,R,R,R,R,R,D,D,O
+  O,D,D,R,R,G,G,R,R,D,D,D,D,D,D,R,R,G,G,R,R,D,D,O
+  O,D,D,G,G,G,G,G,G,D,D,D,D,D,D,G,G,G,G,G,G,D,D,O
+  O,D,G,G,Y,G,G,G,G,D,D,D,D,D,D,G,G,G,G,G,G,D,D,O
+  _,O,D,G,G,Y,G,G,D,D,D,D,D,D,D,D,G,G,G,G,D,O,_,_
+  _,_,O,D,D,G,G,D,D,D,D,D,D,D,D,D,D,G,G,D,O,_,_,_
+  _,_,_,O,O,D,D,D,D,D,D,D,D,D,D,D,D,D,D,O,O,_,_,_
+  _,_,_,_,_,O,O,D,D,D,D,D,D,D,D,D,D,O,O,_,_,_,_
+  _,_,_,_,_,_,_,O,O,O,O,O,O,O,O,O,O,_,_,_,_,_,_,_
+  _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_
+];
+```
+
+## 6. Plasma Reef (Pilot: Xylar the Exiled)
+Fluid, organic curves. Translucent violet shell with cyan veins.
+
+```javascript
+/* Plasma Reef Neutral (24x16) */
+// V = VIOLET, C = NEON_CYAN, W = WHITE, G = ENGINE_GLOW
+const PLASMA_REEF_NEUTRAL = [
+  _,_,_,_,_,_,_,_,_,O,O,O,O,O,_,_,_,_,_,_,_,_,_,_
+  _,_,_,_,_,_,_,O,O,V,V,V,V,V,O,O,_,_,_,_,_,_,_,_
+  _,_,_,_,_,O,O,V,V,V,V,V,V,V,V,V,O,O,_,_,_,_,_,_
+  _,_,_,_,O,V,V,V,C,C,W,C,C,V,V,V,V,V,O,_,_,_,_,_
+  _,_,_,O,V,V,C,C,C,C,C,C,C,C,C,C,V,V,V,O,_,_,_,_
+  _,_,O,V,V,C,C,V,V,V,V,V,V,V,V,C,C,V,V,V,O,_,_,_
+  _,O,V,V,C,C,V,V,V,V,V,V,V,V,V,V,C,C,V,V,V,O,_,_
+  O,V,V,C,C,V,V,G,G,V,V,V,V,G,G,V,V,C,C,V,V,V,O,_
+  O,V,V,C,C,V,G,G,G,G,V,V,G,G,G,G,V,C,C,V,V,V,O,_
+  O,V,V,G,G,G,G,Y,G,G,V,V,G,G,Y,G,G,G,G,V,V,O,O,_
+  _,O,V,G,G,G,G,Y,G,G,D,D,G,G,Y,G,G,G,G,V,O,O,_,_
+  _,_,O,V,G,G,G,G,G,G,D,D,G,G,G,G,G,G,V,O,O,_,_,_
+  _,_,_,O,O,V,V,G,G,D,D,D,D,G,G,V,V,O,O,O,_,_,_,_
+  _,_,_,_,_,O,O,V,V,D,D,D,D,V,V,O,O,O,_,_,_,_,_,_
+  _,_,_,_,_,_,_,O,O,G,G,G,G,O,O,O,_,_,_,_,_,_,_,_
+  _,_,_,_,_,_,_,_,_,O,O,O,O,_,_,_,_,_,_,_,_,_,_,_
+];
+```
+
+## 7. Neon Symphony (Pilot: Master-Remix)
+Architectural, geometric frame. Constantly shifting magenta/gold LEDs.
+
+```javascript
+/* Neon Symphony Neutral (24x16) */
+// M = NEON_MAGENTA, Y = NEON_YELLOW (Gold), W = WHITE, G = ENGINE_GLOW
+const NEON_SYMPHONY_NEUTRAL = [
+  _,_,_,_,_,O,O,O,O,O,O,O,O,O,O,O,O,_,_,_,_,_,_,_
+  _,_,_,_,O,M,M,M,M,M,M,M,M,M,M,M,M,O,_,_,_,_,_,_
+  _,_,_,O,M,M,Y,Y,M,M,M,M,M,M,Y,Y,M,M,O,_,_,_,_,_
+  _,_,O,M,M,Y,W,Y,M,M,M,M,M,M,Y,W,Y,M,M,O,_,_,_,_
+  _,O,M,M,M,Y,Y,M,M,M,M,M,M,M,Y,Y,M,M,M,O,_,_,_
+  O,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,M,O,_,_
+  O,M,M,Y,Y,M,M,Y,Y,M,M,M,M,Y,Y,M,M,Y,Y,M,O,_,_
+  O,M,M,Y,Y,M,G,G,Y,M,M,M,M,Y,G,G,M,Y,Y,M,O,_,_
+  O,M,M,M,M,G,G,G,G,M,M,M,M,G,G,G,G,M,M,M,O,_,_
+  O,D,M,M,G,G,Y,G,G,M,M,M,M,G,G,Y,G,G,M,M,D,O,_,_
+  _,O,D,M,G,G,Y,G,G,D,D,D,D,G,G,Y,G,G,M,D,O,_,_,_
   _,_,O,D,G,G,G,G,D,D,D,D,D,D,G,G,G,G,D,O,_,_,_,_
   _,_,_,O,O,D,D,D,D,D,D,D,D,D,D,D,D,O,O,_,_,_,_,_
   _,_,_,_,_,O,O,D,D,D,D,D,D,D,D,O,O,_,_,_,_,_,_,_

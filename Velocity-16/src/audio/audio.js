@@ -5,10 +5,58 @@
 
 class AudioEngine {
     constructor() {
+        console.log('Audio engine constructor called');
         this.ctx = new (window.AudioContext || window.webkitAudioContext)();
         this.engineOsc = null;
         this.engineGain = null;
         this.isStarted = false;
+
+        // WebSpeech Synthesis Init
+        this.synth = window.speechSynthesis;
+        this.voice = null;
+        this.synthEnabled = true;
+
+        // Try to find a "tech" sounding voice (Master-Remix style)
+        if (this.synth) {
+            const setVoice = () => {
+                const voices = this.synth.getVoices();
+                // Prefer Google UK English Male or similar robotic/clear voices
+                this.voice = voices.find(v => v.name.includes('Google UK English Male')) || 
+                             voices.find(v => v.lang === 'en-US') || 
+                             voices[0];
+            };
+            setVoice();
+            if (this.synth.onvoiceschanged !== undefined) {
+                this.synth.onvoiceschanged = setVoice;
+            }
+        }
+    }
+
+    speak(text, pitch = 1.0, rate = 1.2) {
+        if (!this.synthEnabled || !this.synth) return;
+        
+        // Cancel any ongoing speech to avoid overlap pile-ups
+        this.synth.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        if (this.voice) {
+            utterance.voice = this.voice;
+        }
+        utterance.pitch = pitch; // Slightly higher for "AI" feel
+        utterance.rate = rate;   // Fast-paced like 174 BPM
+        utterance.volume = 0.8;
+        this.synth.speak(utterance);
+    }
+
+    formatLapTime(ms) {
+        const totalSeconds = ms / 1000;
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = (totalSeconds % 60).toFixed(2);
+        
+        if (minutes > 0) {
+            return `${minutes} minutes, ${seconds} seconds`;
+        }
+        return `${seconds} seconds`;
     }
 
     init() {
@@ -42,7 +90,7 @@ class AudioEngine {
         
         this.engineOsc.type = 'square';
         this.engineOsc.frequency.setValueAtTime(50, this.ctx.currentTime);
-        this.engineGain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        this.engineGain.gain.setValueAtTime(0.05, this.ctx.currentTime);
         
         // Routing: Osc -> Gain -> Filter -> Bitcrusher -> Master -> Destination
         this.engineOsc.connect(this.engineGain);
@@ -72,28 +120,18 @@ class AudioEngine {
         this.engineOsc.frequency.setTargetAtTime(freq, this.ctx.currentTime, 0.05);
     }
 
-    onCheckpoint(index) {
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(880 + (index * 110), this.ctx.currentTime);
-        gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
-        osc.connect(gain);
-        gain.connect(this.masterGain);
-        osc.start();
-        osc.stop(this.ctx.currentTime + 0.1);
-    }
-
     onLapComplete(ms, isNewBest) {
         this.playLapChime();
         if (isNewBest) {
             // Add a little extra flair for new best
             setTimeout(() => this.playLapChime(), 150);
+            this.speak(`Lap complete. New personal best: ${this.formatLapTime(ms)}. Excellent drive.`);
+        } else {
+            this.speak(`Lap time: ${this.formatLapTime(ms)}.`);
         }
     }
 
-    onRaceFinish() {
+    onRaceFinish(position, time) {
         // Simple victory "hold" note
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
@@ -105,10 +143,49 @@ class AudioEngine {
         gain.connect(this.masterGain);
         osc.start();
         osc.stop(this.ctx.currentTime + 2);
+
+        const rankSuffix = position === 1 ? 'st' : position === 2 ? 'nd' : position === 3 ? 'rd' : 'th';
+        this.speak(`Race finished. You placed ${position}${rankSuffix} with a total time of ${this.formatLapTime(time)}. Good work out there.`);
+    }
+
+    onLowEnergy() {
+        this.speak("Energy low. Seek boost pads.", 0.8, 1.4);
+    }
+
+    onCheckpoint(index) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(880 + (index * 110), this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.1);
+        
+        // Use shorter speech feedback periodically or on key sectors
+        if (index % 4 === 0) {
+            this.speak("Sector cleared.", 1.2, 1.5);
+        }
+    }
+
+    playLapChime() {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(1760, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.3);
     }
 
     onBoost() {
         this.playBoost();
+        this.speak("Overdrive engaged.", 1.5, 1.8);
     }
 
     playBoost() {
@@ -123,6 +200,18 @@ class AudioEngine {
         gain.connect(this.masterGain);
         osc.start();
         osc.stop(this.ctx.currentTime + 0.3);
+    }
+
+    // Voice Trigger Handlers
+    enableVoiceFeedback(enabled = true) {
+        this.synthEnabled = enabled;
+        if (enabled) {
+            this.speak("Velocity feedback system online.");
+        }
+    }
+
+    testVoice() {
+        this.speak("Testing audio feedback. 174 BPM master pulse check. Velocity 16 initialized.", 1, 1.2);
     }
 }
 

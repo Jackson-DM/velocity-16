@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Velocity-16: Cyber Napa Circuit</title>
+    <style>
+        @font-face {
+            font-family: 'VirtualScreen';
+            src: url('data:application/font-woff2;charset=utf-8;base64,ABC123') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
+        body {
+            background: #050505;
+            color: #00f2ff;
+            font-family: 'VirtualScreen', 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        
+        .arcade-cabinet {
+            position: relative;
+            width: 640px;
+            padding: 60px 80px 100px;
+            background: linear-gradient(to bottom, #111111, #000000);
+            border-radius: 10px;
+            box-shadow: 
+                0 0 0 4px #333,
+                0 0 0 8px #111,
+                0 10px 40px rgba(0, 0, 0, 0.8),
+                inset 0 0 60px rgba(0, 0, 0, 0.6);
+            perspective: 1000px;
+        }
+        
+        .screen-container {
+            position: relative;
+            background: #000;
+            border: 6px solid #111;
+            border-radius: 12px;
+            box-shadow: 
+                0 0 10px rgba(0, 242, 255, 0.4),
+                0 0 20px rgba(255, 0, 255, 0.2),
+                inset 0 0 30px rgba(0, 0, 0, 0.7);
+            overflow: hidden;
+            transform: rotateX(4deg);
+        }
+        
+        canvas {
+            display: block;
+            width: 480px;
+            height: 320px;
+            image-rendering: pixelated;
+            background: #000;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* CRT Effect Overlay */
+        .crt-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.25) 50%
+            );
+            background-size: 100% 4px;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0.4;
+        }
+        
+        /* Screen Glare */
+        .screen-glare {
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(
+                ellipse at center,
+                rgba(255, 255, 255, 0.15) 0%,
+                rgba(255, 255, 255, 0) 60%
+            );
+            transform: rotate(-45deg);
+            pointer-events: none;
+            z-index: 3;
+        }
+        
+        .status-display {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: #111;
+            color: #00f2ff;
+            text-shadow: 0 0 8px #00f2ff;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .status-led {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #00f2ff;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #00f2ff;
+            margin-right: 6px;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-led.standby {
+            background: #ff7700;
+            box-shadow: 0 0 8px #ff7700;
+        }
+        
+        .status-led.active {
+            background: #00ff66;
+            box-shadow: 0 0 8px #00ff66;
+        }
+        
+        .control-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+        }
+        
+        button {
+            background: #111;
+            color: #00f2ff;
+            border: 2px solid #00f2ff;
+            border-radius: 4px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-family: 'VirtualScreen', 'Courier New', monospace;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.2s;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+        }
+        
+        button:hover {
+            background: #00f2ff;
+            color: #000;
+            box-shadow: 0 0 15px #00f2ff;
+        }
+        
+        .button-primary {
+            background: #111;
+            border-color: #ff00ff;
+            color: #ff00ff;
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
+        }
+        
+        .button-primary:hover {
+            background: #ff00ff;
+            color: #000;
+            box-shadow: 0 0 15px #ff00ff;
+        }
+        
+        .pilot-info {
+            font-size: 14px;
+            text-align: right;
+            color: #ff00ff;
+            text-shadow: 0 0 8px rgba(255, 0, 255, 0.5);
+        }
+        
+        .pilot-name {
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+        
+        /* Title with neon effect */
+        .title {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        h1 {
+            font-size: 48px;
+            margin: 0;
+            color: #ff00ff;
+            text-shadow: 
+                0 0 5px #ff00ff,
+                0 0 10px #ff00ff,
+                0 0 15px #ff00ff;
+            letter-spacing: 3px;
+        }
+        
+        h2 {
+            font-size: 16px;
+            margin-top: 5px;
+            color: #00f2ff;
+            text-shadow: 0 0 8px #00f2ff;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="arcade-cabinet">
+        <div class="title">
+            <h1>VELOCITY-16</h1>
+            <h2>Cyber Napa Circuit</h2>
+        </div>
+        
+        <div class="status-display">
+            <div>
+                <span class="status-led standby" id="statusLed"></span>
+                <span id="statusText">ENGINE: STANDBY</span>
+            </div>
+            <div id="speedometer">SPEED: 0 KM/H</div>
+        </div>
+        
+        <div class="screen-container">
+            <canvas id="gameCanvas" width="240" height="160"></canvas>
+            <div class="crt-overlay"></div>
+            <div class="screen-glare"></div>
+        </div>
+        
+        <div class="control-panel">
+            <button id="startBtn" class="button-primary">Initialize Engine</button>
+            <div class="pilot-info">
+                <div class="pilot-name">PILOT: JACKSON</div>
+                <div>VEHICLE: APEX-RED</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    /**
+     * Velocity-16 Color Palette
+     * 16-bit styled color constants
+     */
+    
+    const COLORS = {
+        // Primary Neon Colors
+        NEON_CYAN: '#00f2ff',
+        NEON_MAGENTA: '#ff00ff',
+        NEON_GREEN: '#00ff66',
+        NEON_ORANGE: '#ff7700',
+        NEON_YELLOW: '#ffff00',
+        
+        // Secondary Colors
+        VIOLET: '#9900ff',
+        TEAL: '#00a7a7',
+        DARK_GRAY: '#333333',
+        BLOOD_RED: '#bb0000',
+        GOLD: '#ffcc00',
+        
+        // Base Colors
+        BLACK: '#000000',
+        WHITE: '#ffffff',
+        
+        // Special Effect Colors
+        ENGINE_GLOW: '#ff3300',
+        SCANLINE_COLOR: 'rgba(0, 255, 255, 0.15)',
+        GRID_COLOR: 'rgba(255, 0, 255, 0.1)'
+    };
+    
+    // Unused slot in sprite matrices
+    const _ = null;
+    
+    // Lookup helper for sprite matrices
+    function getColor(colorCode) {
+        switch(colorCode) {
+            case 'O': return COLORS.BLACK;
+            case 'W': return COLORS.WHITE;
+            case 'C': return COLORS.NEON_CYAN;
+            case 'M': return COLORS.NEON_MAGENTA;
+            case 'L': return COLORS.NEON_GREEN;
+            case 'A': return COLORS.NEON_ORANGE;
+            case 'Y': return COLORS.NEON_YELLOW;
+            case 'V': return COLORS.VIOLET;
+            case 'T': return COLORS.TEAL;
+            case 'D': return COLORS.DARK_GRAY;
+            case 'R': return COLORS.BLOOD_RED;
+            case 'G': return COLORS.ENGINE_GLOW;
+            default: return null;
+        }
+    }
+
+    /**
+     * Velocity-16 Sprite System
+     * Manages pixel-art sprites with shearing for the 16-bit racing effect
+     */
+    
+    // Pixel size for rendering (can be adjusted for scaling)
+    const PIXEL_SIZE = 1;
+    
+    // Shear offset multipliers for different tilt angles (-4 to +4)
+    const SHEAR_OFFSETS = [-4, -3, -2, -1, 0, 1, 2, 3, 4];
+    
+    // Vehicle Sprite Matrix Definitions
+    const SPRITES = {
+        /* Apex-Red Neutral (24x16) */
+        // C = NEON_CYAN, M = NEON_MAGENTA, O = BLACK, W = WHITE, G = ENGINE_GLOW
+        APEX_RED_NEUTRAL: [
+          _,_,_,_,_,_,_,_,'O','O','O','O','O','O','O','O',_,_,_,_,_,_,_,_,
+          _,_,_,_,_,'O','O','O','C','C','C','C','C','C','C','C','O','O','O',_,_,_,_,_,
+          _,_,_,'O','O','C','C','C','C','C','M','M','C','C','C','C','C','C','C','O','O',_,_,_,
+          _,_,'O','C','C','C','C','C','C','C','W','M','C','C','C','C','C','C','C','C','C','O',_,_,
+          _,'O','C','C','C','C','C','M','M','C','C','C','C','M','M','C','C','C','C','C','C','C','O',_,
+          'O','C','C','C','C','C','M','M','M','C','C','C','C','M','M','M','C','C','C','C','C','C','C','O',
+          'O','C','C','C','C','M','M','M','M','C','C','C','C','M','M','M','M','C','C','C','C','C','C','O',
+          'O','D','C','C','C','M','G','G','M','C','C','C','C','M','G','G','M','C','C','C','D','D','C','O',
+          'O','D','D','C','C','G','G','G','G','C','C','C','C','G','G','G','G','C','C','D','D','D','C','O',
+          'O','D','D','D','G','G','Y','G','G','C','C','C','C','G','G','Y','G','G','D','D','D','D','O','O',
+          _,'O','D','D','G','G','Y','G','G','D','D','D','D','G','G','Y','G','G','D','D','D','O','O',_,
+          _,_,'O','D','D','G','G','G','G','D','D','D','D','G','G','G','G','D','D','D','O','O',_,_,
+          _,_,_,'O','O','D','D','G','G','D','D','D','D','G','G','D','D','D','O','O','O',_,_,_,
+          _,_,_,_,_,'O','O','D','G','G','D','D','G','G','D','D','O','O','O',_,_,_,_,_,
+          _,_,_,_,_,_,_,'O','O','G','G','G','G','O','O','O','O',_,_,_,_,_,_,_,
+          _,_,_,_,_,_,_,_,_,'O','O','O','O','O',_,_,_,_,_,_,_,_,_,_,
+        ]
+    };
+    
+    // Class to handle rendering pixel-art sprites with shearing for banking effect
+    class SpriteRenderer {
+        constructor(context) {
+            this.ctx = context;
+            this.width = 24;  // Standard width for all sprites
+            this.height = 16; // Standard height for all sprites
+        }
+        
+        /**
+         * Renders a sprite with optional shearing for banking effect
+         * @param {Array} spriteData - The sprite pixel matrix (24x16)
+         * @param {Number} x - X coordinate on canvas
+         * @param {Number} y - Y coordinate on canvas
+         * @param {Number} shearLevel - Banking level (-4 to 4)
+         */
+        renderSprite(spriteData, x, y, shearLevel = 0) {
+            // Validate shear level is in range
+            const safeShearLevel = Math.max(-4, Math.min(4, shearLevel));
+            const shearIndex = safeShearLevel + 4; // Convert to 0-8 index
+            
+            // Center the sprite at x,y
+            const startX = x - (this.width * PIXEL_SIZE / 2);
+            const startY = y - (this.height * PIXEL_SIZE / 2);
+            
+            // Render each pixel with shearing
+            for (let row = 0; row < this.height; row++) {
+                for (let col = 0; col < this.width; col++) {
+                    // Get color code from sprite matrix
+                    const colorCode = spriteData[row * this.width + col];
+                    if (colorCode === null) continue; // Skip transparent pixels
+                    
+                    const color = getColor(colorCode);
+                    if (!color) continue;
+                    
+                    // Apply shearing based on row height and shear level
+                    // More pronounced shearing at the bottom of the sprite
+                    const shearAmount = Math.round(SHEAR_OFFSETS[shearIndex] * row / 15);
+                    
+                    this.ctx.fillStyle = color;
+                    this.ctx.fillRect(
+                        startX + (col + shearAmount) * PIXEL_SIZE, 
+                        startY + row * PIXEL_SIZE,
+                        PIXEL_SIZE,
+                        PIXEL_SIZE
+                    );
+                }
+            }
+        }
+    }
+
+    /**
+     * Audio Engine Mock
+     * Simple version for the standalone demo
+     */
+    class AudioEngine {
+        constructor() {
+            try {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.isStarted = false;
+            } catch(e) {
+                console.log("Audio context not available");
+            }
+        }
+        
+        start() {
+            if (this.ctx && this.ctx.state === 'suspended') {
+                this.ctx.resume();
+            }
+            this.isStarted = true;
+        }
+        
+        updateEngine(speed) {
+            // Mock implementation
+        }
+        
+        speak(text) {
+            console.log("TTS:", text);
+        }
+    }
+
+    const audio = new AudioEngine();
+
+    // Setup canvas
+    const canvas = document.getElementById('gameCanvas');
+    const context = canvas.getContext('2d');
+    const spriteRenderer = new SpriteRenderer(context);
+    
+    // UI Elements
+    const statusLed = document.getElementById('statusLed');
+    const statusText = document.getElementById('statusText');
+    const speedometer = document.getElementById('speedometer');
+    const startButton = document.getElementById('startBtn');
+    
+    // Global Game State
+    let gameState = {
+      isRunning: false,
+      gridOffset: { x: 0, y: 0 },
+      car: {
+        // Starting position
+        position: { x: 120, y: 80 },
+        // Velocity vector
+        velocity: { x: 0, y: 0 },
+        // Orientation in radians
+        angle: 0,
+        // Normal friction coefficient
+        friction: 0.98,
+        // Shear level for banking effect (-4 to 4)
+        shearLevel: 0,
+        // Speed for display
+        speed: 0,
+        // Pulsation effect for neon glow
+        glowPulse: 0,
+        // Car type
+        type: 'APEX_RED_NEUTRAL'
+      }
+    };
+    
+    // Background grid configuration
+    const gridConfig = {
+      cellSize: 16,
+      horizonY: 60,
+      cellRows: 12,
+      cellCols: 24,
+      vanishingPointX: canvas.width / 2,
+      parallaxFactor: 0.8
+    };
+    
+    // Input handling
+    const keys = {};
+    
+    window.addEventListener('keydown', (e) => {
+      keys[e.key] = true;
+    });
+    
+    window.addEventListener('keyup', (e) => {
+      keys[e.key] = false;
+    });
+    
+    function isKeyPressed(key) {
+      return keys[key];
+    }
+    
+    // Determine if the car is in the Napa Hairpin zone
+    function isInNapaHairpin(position) {
+      // Placeholder condition: adjust the zone boundaries as needed
+      // For example, when x is between 200 and 400 and y is greater than 300
+      return (position.x > 200 && position.x < 400 && position.y > 300);
+    }
+    
+    // Update physics and game state
+    function updatePhysics() {
+      // Basic input: accelerate, and turn left/right
+      if (isKeyPressed('ArrowUp')) {
+        // Accelerate in the current facing direction
+        gameState.car.velocity.x += Math.cos(gameState.car.angle) * 0.2;
+        gameState.car.velocity.y += Math.sin(gameState.car.angle) * 0.2;
+      }
+      
+      if (isKeyPressed('ArrowDown')) {
+        // Brake/reverse
+        gameState.car.velocity.x *= 0.95;
+        gameState.car.velocity.y *= 0.95;
+      }
+      
+      if (isKeyPressed('ArrowLeft')) {
+        gameState.car.angle -= 0.05;
+        // Set shear level for banking effect (visual only)
+        gameState.car.shearLevel = Math.max(-4, gameState.car.shearLevel - 0.2);
+      } else if (isKeyPressed('ArrowRight')) {
+        gameState.car.angle += 0.05;
+        // Set shear level for banking effect (visual only)
+        gameState.car.shearLevel = Math.min(4, gameState.car.shearLevel + 0.2);
+      } else {
+        // Return to neutral banking when not turning
+        if (gameState.car.shearLevel > 0) {
+          gameState.car.shearLevel = Math.max(0, gameState.car.shearLevel - 0.1);
+        } else if (gameState.car.shearLevel < 0) {
+          gameState.car.shearLevel = Math.min(0, gameState.car.shearLevel + 0.1);
+        }
+      }
+    
+      // Apply friction based on current zone
+      if (isInNapaHairpin(gameState.car.position)) {
+        // High friction zone: more damping simulating the drift dynamics at the hairpin
+        gameState.car.velocity.x *= 0.85;
+        gameState.car.velocity.y *= 0.85;
+      } else {
+        // Normal friction
+        gameState.car.velocity.x *= gameState.car.friction;
+        gameState.car.velocity.y *= gameState.car.friction;
+      }
+    
+      // Update position based on velocity
+      gameState.car.position.x += gameState.car.velocity.x;
+      gameState.car.position.y += gameState.car.velocity.y;
+    
+      // Basic collision detection with canvas boundaries
+      if (gameState.car.position.x < 0 || gameState.car.position.x > canvas.width) {
+        gameState.car.velocity.x = -gameState.car.velocity.x * 0.5; // Bounce with reduced speed
+        // Ensure the car stays within bounds
+        gameState.car.position.x = Math.max(0, Math.min(canvas.width, gameState.car.position.x));
+      }
+      if (gameState.car.position.y < 0 || gameState.car.position.y > canvas.height) {
+        gameState.car.velocity.y = -gameState.car.velocity.y * 0.5; // Bounce with reduced speed
+        // Ensure the car stays within bounds
+        gameState.car.position.y = Math.max(0, Math.min(canvas.height, gameState.car.position.y));
+      }
+    
+      // Calculate speed for display
+      gameState.car.speed = Math.sqrt(
+        gameState.car.velocity.x * gameState.car.velocity.x + 
+        gameState.car.velocity.y * gameState.car.velocity.y
+      ) * 25; // Arbitrary multiplier for display purposes
+      
+      // Update speedometer display
+      speedometer.textContent = `SPEED: ${Math.round(gameState.car.speed)} KM/H`;
+      
+      // Update audio engine sound based on speed
+      if (gameState.isRunning) {
+        audio.updateEngine(gameState.car.speed);
+      }
+      
+      // Update parallax grid offset based on car movement
+      gameState.gridOffset.x += gameState.car.velocity.x * gridConfig.parallaxFactor;
+      gameState.gridOffset.y += gameState.car.velocity.y * gridConfig.parallaxFactor;
+      
+      // Keep grid offset within bounds for seamless tiling
+      gameState.gridOffset.x %= gridConfig.cellSize;
+      gameState.gridOffset.y %= gridConfig.cellSize;
+      
+      // Update glow pulse for neon effects
+      gameState.car.glowPulse = (gameState.car.glowPulse + 0.05) % (Math.PI * 2);
+    }
+    
+    // Render the neon scan-line grid background with parallax effect
+    function renderGrid() {
+      const { cellSize, horizonY, cellRows, cellCols, vanishingPointX } = gridConfig;
+      const { gridOffset } = gameState;
+      
+      // Draw horizon gradient
+      const horizonGradient = context.createLinearGradient(0, 0, 0, canvas.height);
+      horizonGradient.addColorStop(0, '#000022');
+      horizonGradient.addColorStop(0.4, '#110022');
+      horizonGradient.addColorStop(1, '#000000');
+      
+      context.fillStyle = horizonGradient;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw horizontal grid lines with perspective
+      context.lineWidth = 1;
+      for (let i = 0; i <= cellRows; i++) {
+        const perspectiveY = horizonY + i * (canvas.height - horizonY) / cellRows;
+        const perspectiveWidth = (canvas.width * i / cellRows) * 0.9;
+        
+        const alpha = i / cellRows * 0.6;
+        context.strokeStyle = `rgba(255, 0, 255, ${alpha})`;
+        
+        context.beginPath();
+        context.moveTo(vanishingPointX - perspectiveWidth/2, perspectiveY + gridOffset.y % cellSize);
+        context.lineTo(vanishingPointX + perspectiveWidth/2, perspectiveY + gridOffset.y % cellSize);
+        context.stroke();
+      }
+      
+      // Draw vertical grid lines with perspective
+      for (let j = 0; j <= cellCols; j++) {
+        const progress = j / cellCols;
+        const perspectiveX = vanishingPointX + (progress - 0.5) * canvas.width;
+        const alpha = (1 - Math.abs(progress - 0.5) * 2) * 0.6;
+        
+        context.strokeStyle = `rgba(0, 242, 255, ${alpha})`;
+        
+        context.beginPath();
+        context.moveTo(perspectiveX + gridOffset.x % cellSize, horizonY);
+        context.lineTo(perspectiveX * 0.9 + vanishingPointX * 0.1 + gridOffset.x % cellSize, canvas.height);
+        context.stroke();
+      }
+      
+      // Draw distant mountains in the cyber landscape
+      const mountainGradient = context.createLinearGradient(0, 0, 0, horizonY);
+      mountainGradient.addColorStop(0, 'rgba(25, 0, 50, 0.8)');
+      mountainGradient.addColorStop(1, 'rgba(80, 0, 80, 0.4)');
+      
+      context.fillStyle = mountainGradient;
+      context.beginPath();
+      context.moveTo(0, horizonY);
+      
+      // Create jagged mountain silhouette
+      for (let x = 0; x < canvas.width; x += 20) {
+        const height = 10 + Math.sin(x * 0.05 + gridOffset.x * 0.01) * 10 + Math.random() * 5;
+        context.lineTo(x, horizonY - height);
+      }
+      
+      context.lineTo(canvas.width, horizonY);
+      context.closePath();
+      context.fill();
+      
+      // Draw scan lines
+      context.fillStyle = COLORS.SCANLINE_COLOR;
+      for (let y = 0; y < canvas.height; y += 4) {
+        context.fillRect(0, y, canvas.width, 1);
+      }
+    }
+    
+    // Render the game state to the canvas
+    function render() {
+      // Clear canvas
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Render the parallax grid background
+      renderGrid();
+    
+      // Calculate glow intensity for neon effect
+      const glowIntensity = 0.7 + 0.3 * Math.sin(gameState.car.glowPulse);
+      
+      // Add a subtle glow under the car
+      context.fillStyle = `rgba(0, 242, 255, ${glowIntensity * 0.15})`;
+      context.beginPath();
+      context.ellipse(
+        gameState.car.position.x, 
+        gameState.car.position.y + 8, 
+        16, 
+        8, 
+        0, 
+        0, 
+        Math.PI * 2
+      );
+      context.fill();
+      
+      // Render the car sprite with current shear level for banking effect
+      spriteRenderer.renderSprite(
+        SPRITES[gameState.car.type],
+        gameState.car.position.x,
+        gameState.car.position.y,
+        Math.round(gameState.car.shearLevel)
+      );
+    }
+    
+    // Start the game engine
+    function startGame() {
+      if (gameState.isRunning) return;
+      
+      gameState.isRunning = true;
+      statusLed.classList.remove('standby');
+      statusLed.classList.add('active');
+      statusText.textContent = 'ENGINE: ACTIVE';
+      startButton.textContent = 'Engine Running';
+      
+      // Initialize audio
+      audio.start();
+      audio.speak("Velocity-16 Engine Online. Welcome to Cyber Napa.");
+      
+      // Start the game loop
+      gameLoop();
+    }
+    
+    // Main engine loop
+    function gameLoop() {
+      updatePhysics();
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+    
+    // Initialize event listeners
+    startButton.addEventListener('click', startGame);
+    
+    // Audio initialization on any click
+    window.addEventListener('click', () => {
+      // This ensures audio context is initialized on first interaction
+      // as browsers require user gesture to start audio context
+      audio.start();
+    });
+    
+    // Start with a single render to show the initial state
+    render();
+    
+    // Optional: Expose gameState for debugging
+    window.gameState = gameState;
+    </script>
+</body>
+</html>

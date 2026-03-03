@@ -1,0 +1,15 @@
+{
+  "orchestrator": "Claw",
+  "version": "1.0.0",
+  "activeAgents": [],
+  "completedTasks": [],
+  "config": {
+    "defaultModels": {
+      "orchestrator": "openrouter/google/gemini-3-flash-preview",
+      "logicAgent": "openrouter/openai/gpt-4o",
+      "uiAgent": "openrouter/anthropic/claude-3.5-sonnet"
+    },
+    "notificationChannel": "telegram",
+    "notifyOn": ["spawn", "success", "failure"]
+  }
+}
