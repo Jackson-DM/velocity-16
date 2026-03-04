@@ -59,6 +59,20 @@ class AudioEngine {
         return `${seconds} seconds`;
     }
 
+    playCountdown(num) {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = num === 'GO' ? 'sawtooth' : 'square';
+        osc.frequency.setValueAtTime(num === 'GO' ? 880 : 440, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.5);
+        this.speak(num.toString(), num === 'GO' ? 1.5 : 1.0, 1.5);
+    }
+
     init() {
         if (this.isStarted) return;
         
