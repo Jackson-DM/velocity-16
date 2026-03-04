@@ -2,249 +2,27 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Velocity-16: Cyber Napa Circuit</title>
+    <title>VELOCITY-16</title>
     <style>
-        @font-face {
-            font-family: 'VirtualScreen';
-            src: url('data:application/font-woff2;charset=utf-8;base64,ABC123') format('woff2');
-            font-weight: normal;
-            font-style: normal;
-        }
-        
-        body {
-            background: #050505;
-            color: #00f2ff;
-            font-family: 'VirtualScreen', 'Courier New', monospace;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-        }
-        
-        .arcade-cabinet {
-            position: relative;
-            width: 640px;
-            padding: 60px 80px 100px;
-            background: linear-gradient(to bottom, #111111, #000000);
-            border-radius: 10px;
-            box-shadow: 
-                0 0 0 4px #333,
-                0 0 0 8px #111,
-                0 10px 40px rgba(0, 0, 0, 0.8),
-                inset 0 0 60px rgba(0, 0, 0, 0.6);
-            perspective: 1000px;
-        }
-        
-        .screen-container {
-            position: relative;
-            background: #000;
-            border: 6px solid #111;
-            border-radius: 12px;
-            box-shadow: 
-                0 0 10px rgba(0, 242, 255, 0.4),
-                0 0 20px rgba(255, 0, 255, 0.2),
-                inset 0 0 30px rgba(0, 0, 0, 0.7);
-            overflow: hidden;
-            transform: rotateX(4deg);
-        }
-        
-        canvas {
-            display: block;
-            width: 480px;
-            height: 320px;
-            image-rendering: pixelated;
-            background: #000;
-            position: relative;
-            z-index: 1;
-        }
-        
-        /* CRT Effect Overlay */
-        .crt-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(
-                rgba(18, 16, 16, 0) 50%, 
-                rgba(0, 0, 0, 0.25) 50%
-            );
-            background-size: 100% 4px;
-            z-index: 2;
-            pointer-events: none;
-            opacity: 0.4;
-        }
-        
-        /* Screen Glare */
-        .screen-glare {
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(
-                ellipse at center,
-                rgba(255, 255, 255, 0.15) 0%,
-                rgba(255, 255, 255, 0) 60%
-            );
-            transform: rotate(-45deg);
-            pointer-events: none;
-            z-index: 3;
-        }
-        
-        .status-display {
-            display: flex;
-            justify-content: space-between;
-            padding: 15px 20px;
-            background: #111;
-            color: #00f2ff;
-            text-shadow: 0 0 8px #00f2ff;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        
-        .status-led {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: #00f2ff;
-            border-radius: 50%;
-            box-shadow: 0 0 8px #00f2ff;
-            margin-right: 6px;
-            animation: pulse 2s infinite;
-        }
-        
-        .status-led.standby {
-            background: #ff7700;
-            box-shadow: 0 0 8px #ff7700;
-        }
-        
-        .status-led.active {
-            background: #00ff66;
-            box-shadow: 0 0 8px #00ff66;
-        }
-        
-        .control-panel {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 30px;
-        }
-        
-        button {
-            background: #111;
-            color: #00f2ff;
-            border: 2px solid #00f2ff;
-            border-radius: 4px;
-            padding: 12px 24px;
-            font-size: 16px;
-            font-family: 'VirtualScreen', 'Courier New', monospace;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            transition: all 0.2s;
-            box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
-        }
-        
-        button:hover {
-            background: #00f2ff;
-            color: #000;
-            box-shadow: 0 0 15px #00f2ff;
-        }
-        
-        .button-primary {
-            background: #111;
-            border-color: #ff00ff;
-            color: #ff00ff;
-            box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
-        }
-        
-        .button-primary:hover {
-            background: #ff00ff;
-            color: #000;
-            box-shadow: 0 0 15px #ff00ff;
-        }
-        
-        .pilot-info {
-            font-size: 14px;
-            text-align: right;
-            color: #ff00ff;
-            text-shadow: 0 0 8px rgba(255, 0, 255, 0.5);
-        }
-        
-        .pilot-name {
-            font-size: 18px;
-            margin-bottom: 4px;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.6; }
-            100% { opacity: 1; }
-        }
-        
-        /* Title with neon effect */
-        .title {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-        
-        h1 {
-            font-size: 48px;
-            margin: 0;
-            color: #ff00ff;
-            text-shadow: 
-                0 0 5px #ff00ff,
-                0 0 10px #ff00ff,
-                0 0 15px #ff00ff;
-            letter-spacing: 3px;
-        }
-        
-        h2 {
-            font-size: 16px;
-            margin-top: 5px;
-            color: #00f2ff;
-            text-shadow: 0 0 8px #00f2ff;
-            letter-spacing: 8px;
-            text-transform: uppercase;
-        }
+        body { background: #000; color: #00f2ff; font-family: monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .arcade { border: 4px solid #333; padding: 20px; background: #111; border-radius: 8px; box-shadow: 0 0 20px rgba(0,242,255,0.2); }
+        canvas { background: #000; width: 480px; height: 320px; image-rendering: pixelated; display: block; }
+        .ui { display: flex; justify-content: space-between; padding: 10px 0; font-size: 12px; }
+        .status-led { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: #ff7700; margin-right: 5px; }
+        .status-led.active { background: #00ff66; box-shadow: 0 0 8px #00ff66; }
+        button { background: #000; color: #ff00ff; border: 2px solid #ff00ff; padding: 10px 20px; cursor: pointer; text-transform: uppercase; margin-top: 20px; width: 100%; }
+        button:hover { background: #ff00ff; color: #000; }
     </style>
 </head>
 <body>
-    <div class="arcade-cabinet">
-        <div class="title">
-            <h1>VELOCITY-16</h1>
-            <h2>Cyber Napa Circuit</h2>
+    <div class="arcade">
+        <div class="ui">
+            <div><span id="statusLed" class="status-led"></span> <span id="statusText">ENGINE: STANDBY</span></div>
+            <div id="speedometer">0 KM/H</div>
         </div>
-        
-        <div class="status-display">
-            <div>
-                <span class="status-led standby" id="statusLed"></span>
-                <span id="statusText">ENGINE: STANDBY</span>
-            </div>
-            <div id="speedometer">SPEED: 0 KM/H</div>
-        </div>
-        
-        <div class="screen-container">
-            <canvas id="gameCanvas" width="480" height="320"></canvas>
-            <div class="crt-overlay"></div>
-            <div class="screen-glare"></div>
-        </div>
-        
-        <div class="control-panel">
-            <button id="startBtn" class="button-primary">Initialize Engine</button>
-            <div class="pilot-info">
-                <div class="pilot-name">PILOT: JACKSON</div>
-                <div>VEHICLE: APEX-RED</div>
-            </div>
-        </div>
+        <canvas id="gameCanvas" width="240" height="160"></canvas>
+        <button id="startBtn">Initialize Engine</button>
     </div>
-    
     <script type="module" src="main.js"></script>
 </body>
 </html>

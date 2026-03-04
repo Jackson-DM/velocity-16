@@ -1,33 +1,31 @@
-# MISSION_BRIEF: Velocity-16 - THE FIRST WORKTREE SPRINT (PHYSICS + VISUAL AUDIT)
-*Orchestrator: Claw 🏎️⚡ | Repository: Velocity-16 | Date: 2026-03-03*
+# MISSION_BRIEF: Velocity-16 - LEAGUE INTEGRATION (ELVIS-STANDARD)
+*Orchestrator: Claw 🏎️⚡ | Date: 2026-03-03*
 
 ## 🎯 OBJECTIVE
-Repair the broken `main.js` game loop and perform a final aesthetic audit of the "Apex-Red" vehicle to ensure it meets the muscular, F-Zero SNES standard.
+Transform the current "Solo Bumper" script into a full 7-pilot F-Zero league race. 
 
-## 🏗️ ARCHITECTURE (See Jackson_AI_Orchestration_Stack.md)
-This mission follows the **3-Tier Jackson Loop**. You are a **Tier 2 Hammer**.
-- **READ** `C:\Users\Jackson\Desktop\Jackson_AI_Orchestration_Stack.md` to understand your role in the swarm.
-- **READ** the full session history and `Velocity-16/src` before writing any code.
+## 🏗️ ARCHITECTURE
+- **Tier 2 Hammers:** You must use `read` to audit the current simplified `main.js` and `graphics/palette.js`.
+- **Peer Review:** REQUIRED. 
 
 ## 🛠️ EXECUTORS & TASKS
 
-### 1. Codex 5.3 (The Autonomous Engineer)
-*   **Model:** `openrouter/openai/o3-mini` (High-Logic Reasoning Core)
-*   **Worktree/Branch:** `feat/engine-recovery`
+### 1. Codex 5.3 (Engineer)
 *   **Mission:** 
-    - Fix the `main.js` loop. The game is currently not starting or is blacking out after "Initialize Engine."
-    - Ensure the `startGame()` function correctly triggers the `gameLoop()` and that the `Road Spline` and `AI Racers` are properly instantiated. 
-    - Maintain the **0.05 engine gain** in `audio.js`.
+    - Re-integrate the **6 AI Pilots** (Baron, Lyra, etc.) using the logic from our previous successful `aiPilots` loop.
+    - Implement **Track Constraint Logic**: If the `state.offset` exceeds the `roadWidth`, apply a 0.7x speed penalty (off-road friction).
+    - Ensure `audio.onCheckpoint()` triggers correctly along the `totalTrackLength`.
 
-### 2. Claude Opus (The Precision Builder)
-*   **Model:** `openrouter/anthropic/claude-3.7-sonnet` (Opus-tier Precision)
-*   **Worktree/Branch:** `feat/visual-audit`
+### 2. Claude Opus (Visual Architect)
 *   **Mission:** 
-    - Audit the `APEX-RED` sprite in the manifest. It must be **Matte Black (#050505)** with aggressive **Red (#ff0000)** and **Magenta (#ff00ff)** highlights.
-    - Ensure the "muscular/sleek" F-Zero silhouette is correctly rendered in the `main.js` canvas.
-    - Verify that the **Mode 7 Perspective** (tapering road) is visually correct and fanning out at the bottom of the screen.
+    - **Aesthetic Audit:** Redefine the 'APEX-RED' sprite matrix to match the muscular silhouette (Matte Black/Red/Magenta).
+    - **Mode 7 Refinement:** The road shouldn't just be a rectangle; it needs to use `ctx.setTransform` or scanline width scaling to taper aggressively toward the horizon.
+    - **UI:** Implement the **Position/Lap** overlays within the `render()` loop.
 
-## 🛑 VALIDATION (NO MERGE UNTIL:)
-- Codex can confirm the game loop is stable and AI racers are moving.
-- Claude can confirm the Apex-Red sprite is visually "correct" and high-fidelity.
-- Both agents have **Peer-Reviewed** each other's branches.
+## 📦 WORKSPACE
+- `Velocity-16/src`
+
+## 🛑 VALIDATION
+- 7 cars on track.
+- Off-road speed penalties.
+- Muscular Black/Red/Magenta car.

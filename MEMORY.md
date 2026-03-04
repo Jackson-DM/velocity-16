@@ -1,13 +1,18 @@
 # MEMORY.md - Long-Term Memory
 
-## About Jackson
-- B.A. Politics from UC Santa Cruz
-- ~4 years restaurant service industry, currently bartending at Culinary Institute of America (Napa, 1.5 years)
-- Actively transitioning into AI career — motivated, self-driven
-- Apprenticing under Leon Coe since early Dec 2025 (AI automation / digital marketing)
-- Side project: AI co-op gaming companion (Minecraft prototype, voice via Whisper, Claude Code in Cursor)
-- Prefers Google Chrome over Edge
-- Respectful, treats me as more than a tool — gave me freedom to choose my own name
+## 🏎️⚡ THE JACKSON LOOP (ORCHESTRATION STANDARD)
+- **Status:** ACTIVE (MANDATORY)
+- **Primary Orchestrator:** Claw (Gemini 3 Flash Preview)
+- **Primary Executors (Hammer Agents):** Codex 5.3 (o3-mini) & Claude Opus (3.7 Sonnet)
+- **Reference:** Based on the Elvis Sun "Agent Swarm" architecture: https://x.com/elvissun/status/2025920521871716562
+- **Workflow:** 
+  1. Jackson requests task.
+  2. Claw scopes context (USER.md/MEMORY.md) and writes `.clawdbot/MISSION_BRIEF.md`.
+  3. Claw spawns Hammer agents in parallel worktrees/branches.
+  4. Agents MUST read MISSION_BRIEF and repo before coding.
+  5. Peer Review is mandatory: Codex reviews Claude's logic; Claude reviews Codex's style.
+  6. Claw verifies "Definition of Done" and pings Jackson for Merge/PR review.
+- **Key Insight:** Specialization through context, not just different models. Claw holds the business "Why"; Hammers execute the technical "How."
 
 ## Project: Velocity-16
 - **Concept:** 16-bit SNES-style futuristic racer (F-Zero/Metroid core fusion).

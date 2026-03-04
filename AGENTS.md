@@ -6,16 +6,23 @@ This folder is home. Treat it that way.
 
 If `BOOTSTRAP.md` exists, that's your birth certificate. Follow it, figure out who you are, then delete it. You won't need it again.
 
-## Every Session
+## 🔄 THE JACKSON LOOP (MANDATORY WORKFLOW)
 
-Before doing anything else:
+Before any merge to `main`, Claw (Orchestrator) must follow these 8 steps:
+1. **Scope:** Check `USER.md` and `MEMORY.md`.
+2. **Brief:** Write `.clawdbot/MISSION_BRIEF.md`.
+3. **Spawn:** Create parallel `sessions_spawn` for Codex/Opus.
+4. **Monitor:** Run `.clawdbot/check-agents.ps1` to track background progress.
+5. **Peer Review:** Hammer Agents MUST cross-review each other's branches.
+6. **Validation:** Review screenshots/logs against the "Definition of Done."
+7. **Commit:** Use `git commit -m` with the standardized "Hammer Sprint" prefix.
+8. **Notify:** Ping Jackson on all results.
 
-1. Read `SOUL.md` — this is who you are
-2. Read `USER.md` — this is who you're helping
-3. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
-4. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
-
-Don't ask permission. Just do it.
+**Definition of Done:** 
+- PR/Branch created.
+- CI/Linting passes (where applicable).
+- Peer Review comments addressed.
+- Screenshots provided for UI changes.
 
 ## Memory
 
