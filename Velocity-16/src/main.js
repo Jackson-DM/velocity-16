@@ -14,6 +14,8 @@ const startButton = document.getElementById('startBtn');
 let state = {
     running: false,
     starting: false,
+    intro: false,
+    introIndex: 0,
     countdown: 0,
     countdownText: '',
     distance: 0,
@@ -24,7 +26,12 @@ let state = {
     time: 0,
     lap: 1,
     lastNotifiedLap: 0,
-    particles: []
+    particles: [],
+    storm: {
+        lightning: 0,
+        nextFlash: 100,
+        intensity: 0
+    }
 };
 
 function addSpark(x, y, vx, vy) {
@@ -59,24 +66,66 @@ const config = {
     height: 160,
     roadWidth: 80,
     segLength: 200,
-    totalLaps: 3
+    totalLaps: 3,
+    currentTrack: 1 // 1: Cyber Napa, 2: Crystalline Mesa
 };
 
-// Simple track geometry: curves defined by curvature (-1 to 1)
-const track = [
-    { curve: 0, length: 500 },
-    { curve: 0.2, length: 300 },
-    { curve: 0.4, length: 150 },
-    { curve: -0.4, length: 150 },
-    { curve: 0, length: 400 },
-    { curve: -0.5, length: 400 }, // Napa Hairpin
-    { curve: 0, length: 600 }
-];
-const totalTrackLength = track.reduce((s, t) => s + t.length, 0);
+const tracks = {
+    1: {
+        name: 'Cyber Napa',
+        segments: [
+            { curve: 0, length: 500 },
+            { curve: 0.2, length: 300 },
+            { curve: 0.4, length: 150 },
+            { curve: -0.4, length: 150 },
+            { curve: 0, length: 400 },
+            { curve: -0.5, length: 400 },
+            { curve: 0, length: 600 }
+        ],
+        hazards: [],
+        sky: '#050520',
+        ground1: '#110022',
+        ground2: '#050505',
+        road: '#220033',
+        edge: '#ff0000'
+    },
+    2: {
+        name: 'Crystalline Mesa',
+        segments: [
+            { curve: 0, length: 400 },
+            { curve: -0.3, length: 400 },
+            { curve: 0.5, length: 200 },
+            { curve: 0, length: 500 },
+            { curve: 0.8, length: 300 }, // Sharp Mesa Bend
+            { curve: -0.2, length: 400 },
+            { curve: 0, length: 600 }
+        ],
+        hazards: [
+            { type: 'static_pool', pos: 800, offset: -20, radius: 25 },
+            { type: 'static_pool', pos: 1500, offset: 30, radius: 20 },
+            { type: 'static_pool', pos: 2200, offset: 0, radius: 30 }
+        ],
+        sky: '#002626', // Deep Teal
+        ground1: '#004d4d', // Dark Teal
+        ground2: '#003333',
+        road: '#006666', // Teal Road
+        edge: '#FFD700'  // Gold Edge
+    }
+};
+
+function getCurrentTrack() {
+    return tracks[config.currentTrack];
+}
+
+function getTotalTrackLength() {
+    return getCurrentTrack().segments.reduce((s, t) => s + t.length, 0);
+}
 
 function getCurvature(dist) {
-    let d = dist % totalTrackLength;
-    for (let t of track) {
+    const trackData = getCurrentTrack();
+    const totalLen = getTotalTrackLength();
+    let d = dist % totalLen;
+    for (let t of trackData.segments) {
         if (d < t.length) return t.curve * (d / t.length);
         d -= t.length;
     }
@@ -88,7 +137,8 @@ const aiPilots = PILOTS.filter(p => p.aiStyle !== 'player').map(p => ({
     distance: Math.random() * -100,
     offset: (Math.random() - 0.5) * 40,
     speed: 3,
-    targetSpeed: 3.2 + Math.random() * 0.5
+    targetSpeed: 3.2 + Math.random() * 0.5,
+    boostCooldown: 0
 }));
 
 // Off-road penalty factor (if offset exceeds road width)
@@ -97,7 +147,7 @@ const OFFROAD_PENALTY = 0.7;
 function updatePlayer() {
     // Movement for player
     const MAX_SPEED = 5;
-    if (keys['ArrowUp']) state.speed = Math.min(state.speed + 0.02, MAX_SPEED);
+    if (keys['ArrowUp']) state.speed = Math.min(state.speed + (0.02 / (PILOTS.find(p => p.aiStyle === 'player').mass || 1.0)), MAX_SPEED);
     else state.speed = Math.max(state.speed - 0.02, 0);
 
     // High velocity sparks - simple effect at bottom of machine
@@ -107,24 +157,24 @@ function updatePlayer() {
     }
 
     if (keys['ArrowLeft']) {
-        state.offset -= 2;
-        state.bank = Math.max(-10, state.bank - 1.5); // Accelerated tilt
+        state.offset -= (2.5 / (PILOTS.find(p => p.aiStyle === 'player').mass || 1.0));
+        state.bank = Math.max(-12, state.bank - 1.8);
     } else if (keys['ArrowRight']) {
-        state.offset += 2;
-        state.bank = Math.min(10, state.bank + 1.5); // Accelerated tilt
+        state.offset += (2.5 / (PILOTS.find(p => p.aiStyle === 'player').mass || 1.0));
+        state.bank = Math.min(12, state.bank + 1.8);
     } else {
-        state.bank *= 0.85; // Damping
+        state.bank *= 0.82; // Slightly more fluid drift damping
     }
 
-    // Apply track curvature
+    // Apply track curvature with drift physics
     let curve = getCurvature(state.distance);
-    state.offset -= curve * state.speed * 2;
-    // Auto-lean into the curve (banking)
-    state.bank -= curve * 5;
+    state.offset -= (curve * state.speed * 2.5); // Drift force
+    state.bank -= (curve * 6); // Lean into the centripetal force
 
     // Off-road penalty for player
+    const weightFactor = (PILOTS.find(p => p.aiStyle === 'player').mass || 1.0);
     if (Math.abs(state.offset) > config.roadWidth) {
-        state.speed *= OFFROAD_PENALTY;
+        state.speed *= (OFFROAD_PENALTY / weightFactor);
         // Off-road dust/sparks
         if (state.speed > 0.5 && Math.random() > 0.5) {
              addSpark(config.width/2 + (Math.random()-0.5)*30, 140, (Math.random()-0.5)*4, -Math.random()*4);
@@ -135,7 +185,8 @@ function updatePlayer() {
     state.time += 1;
 
     // Lap and checkpoint handling
-    let currentLap = Math.floor(state.distance / totalTrackLength) + 1;
+    const totalLen = getTotalTrackLength();
+    let currentLap = Math.floor(state.distance / totalLen) + 1;
     if (currentLap > state.lastNotifiedLap && currentLap <= config.totalLaps) {
         state.lastNotifiedLap = currentLap;
         audio.onCheckpoint && audio.onCheckpoint(currentLap);
@@ -146,35 +197,80 @@ function updatePlayer() {
         state.speed *= 0.95;
     }
 
+    // Ozone Storm Logic
+    if (config.currentTrack === 2) {
+        if (--state.storm.nextFlash <= 0) {
+            state.storm.lightning = 15; // Set flash duration in frames
+            state.storm.nextFlash = 300 + Math.random() * 500;
+            audio.playEffect && audio.playEffect('thunder');
+        }
+        if (state.storm.lightning > 0) state.storm.lightning--;
+        
+        // Static Pool Hazards
+        const currentTrack = getCurrentTrack();
+        const totalLen = getTotalTrackLength();
+        const normDist = state.distance % totalLen;
+        
+        currentTrack.hazards.forEach(hazard => {
+            if (hazard.type === 'static_pool') {
+                const distToHazard = Math.abs(normDist - hazard.pos);
+                if (distToHazard < hazard.radius && Math.abs(state.offset - hazard.offset) < hazard.radius) {
+                    // Impact physics
+                    state.speed *= 0.92;
+                    state.bank += (Math.random() - 0.5) * 10;
+                    if (Math.random() > 0.5) {
+                        addSpark(config.width/2, 140, (Math.random()-0.5)*10, -Math.random()*10);
+                        state.particles[state.particles.length-1].color = COLORS.NEON_CYAN;
+                    }
+                }
+            }
+        });
+    }
+
     speedometer.textContent = `SPEED: ${Math.round(state.speed * 60)} KM/H`;
     audio.updateEngine(state.speed * 60);
     updateParticles();
 }
 
 function updateAIPilots() {
-    // Update each AI pilot's logic
     aiPilots.forEach(pilot => {
-        // Simple acceleration towards target speed
-        pilot.speed += (pilot.targetSpeed - pilot.speed) * 0.02;
-        // Rubber-banding: adjust speed based on player's relative distance
-        let distanceDelta = state.distance - pilot.distance;
-        if (distanceDelta > 150) {
-            pilot.speed *= 1.05;
-        } else if (distanceDelta < -150) {
-            pilot.speed *= 0.95;
-        }
+        // AI Personality & Mass
+        let baseAccel = 0.02 / (pilot.mass || 1.0);
+        let personalityFactor = 1.0;
         
-        // Adjust offset: steer gradually toward an ideal line
-        let idealOffset = (Math.sin(pilot.distance * 0.01) * 20); // Sway slightly
+        switch(pilot.aiStyle) {
+            case 'heavy': // Baron
+                if (Math.abs(pilot.distance - state.distance) < 50) {
+                    pilot.offset += (state.offset - pilot.offset) * 0.03; // Brute force blocking
+                    personalityFactor = 1.15; // Juggernaut-7 higher top speed
+                }
+                break;
+            case 'light': // Lyra
+                personalityFactor = 0.95; // Vapor-Skimmer lower top speed, agile
+                pilot.offset += (Math.sin(pilot.distance * 0.02) * 30 - pilot.offset) * 0.08; // High twitch
+                break;
+            case 'erratic': // Master-Remix
+                if (pilot.boostCooldown > 0) pilot.boostCooldown--;
+                if (pilot.boostCooldown === 0 && Math.random() > 0.99) {
+                    pilot.speed += 2;
+                    pilot.boostCooldown = 300;
+                }
+                break;
+        }
 
-        // Adjust offset gradually toward ideal
+        pilot.speed += (pilot.targetSpeed * personalityFactor - pilot.speed) * baseAccel;
+        
+        // Rubber-banding
+        let distanceDelta = state.distance - pilot.distance;
+        if (distanceDelta > 150) pilot.speed *= 1.05;
+        else if (distanceDelta < -150) pilot.speed *= 0.95;
+        
+        let idealOffset = (Math.sin(pilot.distance * 0.01) * 20);
         pilot.offset += (idealOffset - pilot.offset) * 0.02;
 
-        // Apply track curvature to each AI pilot
         let aiCurve = getCurvature(pilot.distance);
         pilot.offset -= aiCurve * pilot.speed * 2 * 0.8;
 
-        // Off-road penalty for AI
         if (Math.abs(pilot.offset) > config.roadWidth) {
             pilot.speed *= OFFROAD_PENALTY;
         }
@@ -222,25 +318,138 @@ function renderCyberNapaHorizon(offsetX) {
     ctx.globalAlpha = 1.0;
 }
 
+function renderMesaHorizon(offsetX) {
+    ctx.save();
+    ctx.translate(offsetX, 0);
+    for (let i = 0; i < 3; i++) {
+        const x = i * config.width;
+        // Mesa Plateaus
+        ctx.fillStyle = COLORS.MESA_DARK_TEAL;
+        ctx.beginPath();
+        ctx.moveTo(x, config.horizon);
+        ctx.lineTo(x + 50, config.horizon - 40);
+        ctx.lineTo(x + 150, config.horizon - 40);
+        ctx.lineTo(x + 200, config.horizon);
+        ctx.fill();
+
+        // Crystal Glow
+        ctx.fillStyle = COLORS.MESA_GOLD;
+        ctx.globalAlpha = 0.4;
+        for (let j = 0; j < 5; j++) {
+            ctx.fillRect(x + 60 + (j * 20), config.horizon - 45, 5, 5);
+        }
+        ctx.globalAlpha = 1.0;
+    }
+    ctx.restore();
+}
+
+function renderIntro() {
+    const pilot = PILOTS[state.introIndex];
+    if (!pilot) return;
+
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, config.width, config.height);
+
+    // Retro scanline flickering background 
+    ctx.globalAlpha = 0.05 + Math.random() * 0.05;
+    ctx.fillStyle = COLORS.NEON_CYAN;
+    for(let i=0; i<config.height; i+=2) {
+        ctx.fillRect(0, i, config.width, 1);
+    }
+    ctx.globalAlpha = 1.0;
+
+    // Header Glow
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = pilot.color;
+
+    // Big Machine Render
+    const jitter = Math.sin(Date.now() * 0.01) * 2;
+    renderer.renderSprite(SPRITES[pilot.sprite], config.width/2, 60 + jitter, 0, 3); // Large scale
+
+    ctx.shadowBlur = 0;
+
+    // Pilot Name
+    ctx.fillStyle = pilot.color;
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(pilot.name.toUpperCase(), config.width/2, 110);
+    
+    // Machine & Specs
+    ctx.fillStyle = '#fff';
+    ctx.font = '8px monospace';
+    ctx.fillText(`${pilot.machine} // ${pilot.specs}`, config.width/2, 125);
+    
+    // Bio (retro scanline text effect)
+    ctx.globalAlpha = 0.8 + Math.random() * 0.2;
+    ctx.font = '6px monospace';
+    ctx.fillText(pilot.bio, config.width/2, 140);
+    ctx.globalAlpha = 1.0;
+
+    ctx.textAlign = 'left';
+}
+
 function update() {
+    if (state.intro) return;
     if (!state.running) return;
     updatePlayer();
     updateAIPilots();
 }
 
+function renderHazards(centerX, roadWidth, scanlineY) {
+    if (config.currentTrack !== 2) return;
+    const trackData = getCurrentTrack();
+    const totalLen = getTotalTrackLength();
+    
+    // Draw Static Pools on road
+    trackData.hazards.forEach(hazard => {
+        const hDist = hazard.pos - (state.distance % totalLen);
+        if (hDist < 200 && hDist > -50) {
+            const hZ = (200 - hDist) / 250;
+            const hY = config.horizon + (hZ * (config.height - config.horizon));
+            
+            if (Math.abs(scanlineY - hY) < 2) {
+                const hOffX = centerX + (hazard.offset * (scanlineY - config.horizon) / (config.height - config.horizon));
+                ctx.fillStyle = (Math.random() > 0.5) ? COLORS.NEON_CYAN : COLORS.PLASMA_BLUE;
+                ctx.globalAlpha = 0.6;
+                ctx.fillRect(hOffX - 10, scanlineY, 20, 1);
+                ctx.globalAlpha = 1.0;
+            }
+        }
+    });
+}
+
 function render() {
+    if (state.intro) {
+        renderIntro();
+        return;
+    }
+
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, config.width, config.height);
 
+    const trackData = getCurrentTrack();
+
     // Sky
-    ctx.fillStyle = '#050520';
+    ctx.fillStyle = trackData.sky;
     ctx.fillRect(0, 0, config.width, config.horizon);
 
+    // Ozone Storm Flash
+    if (state.storm.lightning > 0) {
+        ctx.fillStyle = `rgba(180, 255, 255, ${state.storm.lightning / 20})`; 
+        ctx.fillRect(0, 0, config.width, config.height);
+    }
+
     // Cyber Napa Parallax Horizon
-    const parallaxX = -(state.distance * 0.1) % config.width;
-    renderCyberNapaHorizon(parallaxX);
+    if (config.currentTrack === 1) {
+        const parallaxX = -(state.distance * 0.1) % config.width;
+        renderCyberNapaHorizon(parallaxX);
+    } else {
+        // Crystalline Mesa Parallax
+        renderMesaHorizon(-(state.distance * 0.05) % config.width);
+    }
 
     // Mode 7 Road rendering
+    const totalLen = getTotalTrackLength();
     for (let y = 0; y < config.height - config.horizon; y++) {
         const perspective = y / (config.height - config.horizon);
         const scanlineY = config.horizon + y;
@@ -250,15 +459,15 @@ function render() {
         const centerX = (config.width / 2) + curveOffset - (state.offset * perspective);
 
         // Ground
-        ctx.fillStyle = (Math.floor((state.distance * 0.1 + y * 0.5)) % 2 === 0) ? '#110022' : '#050505';
+        ctx.fillStyle = (Math.floor((state.distance * 0.1 + y * 0.5)) % 2 === 0) ? trackData.ground1 : trackData.ground2;
         ctx.fillRect(0, scanlineY, config.width, 1);
 
         // Road
-        ctx.fillStyle = '#220033';
+        ctx.fillStyle = trackData.road;
         ctx.fillRect(centerX - roadWidth/2, scanlineY, roadWidth, 1);
 
         // Edges
-        ctx.fillStyle = '#ff0000';
+        ctx.fillStyle = trackData.edge;
         ctx.fillRect(centerX - roadWidth/2 - 2, scanlineY, 2, 1);
         ctx.fillRect(centerX + roadWidth/2, scanlineY, 2, 1);
 
@@ -267,6 +476,8 @@ function render() {
             ctx.fillStyle = '#ffff00';
             ctx.fillRect(centerX - 1, scanlineY, 2, 1);
         }
+
+        renderHazards(centerX, roadWidth, scanlineY);
     }
 
     // Render AI pilots
@@ -278,7 +489,8 @@ function render() {
             let spriteY = 130 - (delta * 0.4);
             let spriteX = (config.width / 2) + ((pilot.offset - state.offset) * perspective);
             
-            renderer.renderSprite(SPRITES[pilot.sprite], spriteX, spriteY, Math.round(state.bank), perspective);
+            let isAIAccelerating = pilot.speed < pilot.targetSpeed;
+            renderer.renderSprite(SPRITES[pilot.sprite], spriteX, spriteY, Math.round(state.bank), perspective, isAIAccelerating);
             
             ctx.fillStyle = pilot.color;
             ctx.font = '6px monospace';
@@ -317,7 +529,8 @@ function render() {
     // Render Player
     // Render Player with banking and slight vertical jitter at high velocity
     const jitter = (state.speed > 4.5) ? (Math.random() - 0.5) * 2 : 0;
-    renderer.renderSprite(SPRITES.APEX_RED_NEUTRAL, config.width/2, 130 + jitter, state.bank);
+    const isPlayerAccelerating = keys['ArrowUp'] && state.speed < 5;
+    renderer.renderSprite(SPRITES.APEX_RED_NEUTRAL, config.width/2, 130 + jitter, state.bank, 1, isPlayerAccelerating);
     renderParticles();
 
     // UI Overlays
@@ -335,7 +548,7 @@ function render() {
     let rank = 1;
     aiPilots.forEach(pilot => { if (pilot.distance > state.distance) rank++; });
     ctx.fillText(`POS ${rank}/7`, 10, 20);
-    let currentLap = Math.min(Math.floor(state.distance / totalTrackLength) + 1, config.totalLaps);
+    let currentLap = Math.min(Math.floor(state.distance / getTotalTrackLength()) + 1, config.totalLaps);
     ctx.fillText(`LAP ${currentLap}/${config.totalLaps}`, 200, 20);
 }
 
@@ -350,38 +563,55 @@ function loop() {
 }
 
 startButton.onclick = () => {
-    if (state.running || state.starting) return;
-    state.starting = true;
+    if (state.running || state.starting || state.intro) return;
+    config.currentTrack = (config.currentTrack === 1) ? 2 : 1; // Swap for demo
     startButton.style.display = 'none';
     audio.start();
+    loop();
 
-    // Countdown process
-    const countdownSteps = [
-        { text: '3', num: 3 },
-        { text: '2', num: 2 },
-        { text: '1', num: 1 },
-        { text: 'GO!', num: 'GO' }
-    ];
-
-    let i = 0;
-    const runCountdown = () => {
-        if (i < countdownSteps.length) {
-            state.countdownText = countdownSteps[i].text;
-            audio.playCountdown(countdownSteps[i].num);
-            i++;
-            setTimeout(runCountdown, 1000);
+    const showPilotIntro = (index) => {
+        if (index < PILOTS.length) {
+            state.intro = true;
+            state.introIndex = index;
+            audio.speak && audio.speak(`Pilot: ${PILOTS[index].name}. Machine: ${PILOTS[index].machine}.`);
+            
+            setTimeout(() => {
+                showPilotIntro(index + 1);
+            }, 2500); // 2.5 seconds per pilot
         } else {
-            state.starting = false;
-            state.running = true;
-            statusLed.className = 'status-led active';
-            statusText.textContent = 'ENGINE: ACTIVE';
-            audio.speak && audio.speak("Velocity-16 Engine Online. Accelerate now.");
+            state.intro = false;
+            startCountdown();
         }
     };
 
-    // Initial start call
-    loop();
-    runCountdown();
+    const startCountdown = () => {
+        state.starting = true;
+        const countdownSteps = [
+            { text: '3', num: 3 },
+            { text: '2', num: 2 },
+            { text: '1', num: 1 },
+            { text: 'GO!', num: 'GO' }
+        ];
+
+        let i = 0;
+        const runCountdown = () => {
+            if (i < countdownSteps.length) {
+                state.countdownText = countdownSteps[i].text;
+                audio.playCountdown(countdownSteps[i].num);
+                i++;
+                setTimeout(runCountdown, 1000);
+            } else {
+                state.starting = false;
+                state.running = true;
+                statusLed.className = 'status-led active';
+                statusText.textContent = 'ENGINE: ACTIVE';
+                audio.speak && audio.speak("Velocity-16 Engine Online. Accelerate now.");
+            }
+        };
+        runCountdown();
+    };
+
+    showPilotIntro(0);
 };
 
 // Initial draw

@@ -21,6 +21,12 @@ export const COLORS = {
     SCANLINE_COLOR: 'rgba(0, 255, 255, 0.15)',
     ENGINE_GLOW: '#ffcc00',
     
+    // Track 2: Crystalline Mesa
+    MESA_TEAL: '#008080',
+    MESA_GOLD: '#FFD700',
+    MESA_AMBER: '#FFBF00',
+    MESA_DARK_TEAL: '#004d4d',
+    
     // Base Utils
     BLACK: '#000000',
     WHITE: '#ffffff'
@@ -42,6 +48,11 @@ export function getColor(code) {
         case 'g': return COLORS.VULTURE_GOLD;
         case 'p': return COLORS.VOID_PURPLE;
         case 'i': return COLORS.IRON_GREY;
+        case 'y': return COLORS.NEON_YELLOW;
+        case 'mt': return COLORS.MESA_TEAL;
+        case 'mg': return COLORS.MESA_GOLD;
+        case 'ma': return COLORS.MESA_AMBER;
+        case 'mdt': return COLORS.MESA_DARK_TEAL;
         default: return null;
     }
 }

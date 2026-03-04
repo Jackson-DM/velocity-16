@@ -1,29 +1,29 @@
-# MISSION_BRIEF: Velocity-16 - LEAGUE AUTONOMY & ENVIRONMENT
+# MISSION_BRIEF: Velocity-16 - REPOSITORY ARCHIVE & DOCUMENTATION
 *Orchestrator: Claw 🏎️⚡ | Date: 2026-03-03*
 
 ## 🎯 OBJECTIVE
-Transform the balanced core into a fully featured league racing game while the user is away. This is a test of autonomous swarm synchronization.
+Perform a full documentation audit and update across the entire repository to reflect the "Elvis Standard" transition and the new 7-pilot league features.
+
+## 🏗️ REPO STRUCTURE AUDIT
+- **src/audio/audio.js:** Updated with 0.05 gain engine hum and TTS feedback.
+- **src/graphics/sprites.js:** New 24x16 and 32x13 hand-painted matrices for all pilots.
+- **src/main.js:** Mode 7 evolution, mass-based physics, and Character Intro Cinema.
+- **docs/:** Outdated specs need alignment with the "Rear-View" standard.
 
 ## 🛠️ EXECUTORS & TASKS
 
-### 1. Claude Opus (Asset & Environment Specialist)
+### 1. Claude Opus (Technical Writer / Documentation Lead)
 *   **Mission:** 
-    - **Roster Sprites:** Create unique 24x16 pixel-art matrices for the other 6 pilots (Iron Vulture, Plasma Reef, etc.) in `graphics/sprites.js`. Each must have a distinct color profile and silhouette.
-    - **Cyber Napa Horizon:** Upgrade the parallax background with "Hydroponic Vineyard" details (glowing green vines, synth-vats) that move with the distance state.
-    - **Visual Feedback:** Add a "Boost" screen-flash effect when speed exceeds 95% of max.
+    - **README.md:** Update the project overview to include the Hammer-Agent workflow and the newly implemented racing features.
+    - **SPRITE_MANIFEST.md:** Update with the definitive 24x16 rear-view matrices and flicker logic.
+    - **AUDIO_SPEC.md:** Document the TTS voice-over triggers and bitcrushed SNES filter logic.
 
-### 2. Codex 5.3 (Systems & Results Engineer)
+### 2. Codex 5.3 (Systems Auditor)
 *   **Mission:** 
-    - **Race Lifecycle:** Implement a "Race Finished" state. When 3 laps are complete, stop the clock and display a result leaderboard (1st through 7th).
-    - **Checkpoints Display:** Show a small "Sector Time" popup UI when passing checkpoints.
-    - **Persistent High Score:** Save the "Best Lap" to `localStorage` so it persists after refresh.
-
-## 🏗️ SWARM PROTOCOL
-- **Isolated Worktrees:** Each Hammer works on its own specific feature set.
-- **Continuous Peer Review:** Codex must verify the DOM logic for Opus's new UI elements; Opus must verify the "feel" of the result screen layout.
-- **NO INTERVENTION:** You are to handle errors and merging autonomously.
+    - **Code Comments:** Perform a "comment sprint" across `main.js` and `audio.js` to ensure the complex Mode 7 math and mass physics are clearly explained for future sessions.
+    - **TASK_HISTORY.md:** Create a finalized log of every successful "Jackson Loop" sprint performed today.
 
 ## 🛑 VALIDATION
-- No generic Apex-Red clones; all 7 racers must have unique sprites.
-- The game loop must transition cleanly from GO -> RACE -> FINISH.
-- Best Lap time is recorded and visible.
+- No dead links in documentation.
+- All 7 pilot machine specs are documented.
+- Physics constants are clearly defined in the source code.

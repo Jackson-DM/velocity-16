@@ -1,27 +1,43 @@
-# AUDIO_SPEC.md - Project: Velocity-16 Sonic Direction
+# AUDIO_SPEC.md - Velocity-16 Sonic Direction
 
-## 1. Overview
-Project: Velocity-16 is a high-octane racing experience. The audio must evoke speed, aggression, and futuristic precision. The soundtrack is a hybrid of aggressive electronic metal, French house, and high-speed breakbeats.
+## 🏎️ 1. Overview
+Project: Velocity-16 is a high-octane racing experience. The audio evokes speed, aggression, and futuristic precision. The soundtrack is a hybrid of electronic metal, French house, and high-speed breakbeats, reinforced by 16-bit FM synthesis and robotic TTS feedback.
 
-## 2. Genre Fusion
-- **Aggressive EDM/Metal (Kayzo / Sullivan King):** Distorted bass, aggressive FM synthesis growls, and heavy rhythmic impact. Used for high-intensity sections and crashes.
-- **French House/Synth (Daft Punk):** Clean, rhythmic synth stabs, vocoder-like textures, and funky basslines. Used for menus, cruising speeds, and UI feedback.
-- **Drum & Bass / Jungle:** High-speed breakbeats (174 BPM) for the core gameplay loop. Provides the constant rhythmic drive required for a racing game.
+## ⚡ 2. Genre Fusion
+- **Aggressive EDM/Metal (Kayzo / Sullivan King Style):** Distorted bass, aggressive FM synthesis growls, 0.05 gain engine hum (square wave), and heavy rhythmic impact.
+- **French House/Synth (Daft Punk Style):** Clean, rhythmic synth stabs, vocoder-like textures, and funky basslines.
+- **Drum & Bass / Jungle:** Core gameplay loop at **174 BPM** for constant rhythmic drive.
 
-## 3. Core Tempo
-- **Main Racing Loop:** 174 BPM (Standard DnB tempo).
-- All rhythmic elements, including engine pulses and UI transitions, should sync to this master clock.
+## 🕒 3. Master Clock
+- **Tempo:** 174 BPM.
+- All rhythmic elements, engine pulses, and UI transitions sync to this master tempo.
 
-## 4. Technical Implementation (Web Audio API)
-### Growl Synthesis (Sullivan King Style)
-- **FM Synthesis:** Carrier-Modulator setups where the modulator frequency and gain are heavily automated via LFOs or Envelopes.
-- **Distortion:** Using `WaveShaperNode` to apply non-linear gain and clipping to FM output.
-- **Filtering:** Resonant `BiquadFilterNode` (High-Q Lowpass/Bandpass) with rapid frequency sweeps to create "vowel" movements.
+## 🔊 4. Technical Implementation (Web Audio API)
 
-### Vocoder Effects (Daft Punk Style)
-- **Carrier/Modulator Simulation:** Using multiple narrow bandpass filters in parallel to simulate formants.
-- **Pulse-Width Modulation (PWM):** Mimicking analog synth warmths using oscillating pulse waves.
-- **Bitcrushing:** Subtle `scriptProcessor` or `AudioWorklet` to add digital grit.
+### 🏎️ Engine Hum (Bitcrushed)
+- **Oscillator:** Square wave for grit.
+- **Processing:** Low-pass filter (3000Hz) -> 4-bit Bitcrusher simulation -> Master Gain.
+- **Dynamic Pitch:** Frequency maps from 50Hz to 200Hz based on machine speed.
 
-## 5. File Structure
-- `src/audio/audio.js`: Main audio engine and synthesizer definitions.
+### 🎙️ TTS (Text-to-Speech) Pilot Feedback
+Velocity-16 uses the `WebSpeech API` for real-time race telemetry:
+- **Voices:** Robotic/Clear (Prefers "Google UK English Male" or similar).
+- **Pitch:** 1.0 - 1.5 (Slightly higher for AI feel).
+- **Rate:** 1.2 - 1.5 (Synced to rapid-fire gameplay).
+- **Triggers:**
+  - **Countdown:** Verbal "3, 2, 1, GO" synced with square wave osc.
+  - **Sector/Checkpoint:** "Sector cleared" notifications.
+  - **Lap Completion:** Reading formatted lap times (e.g., "Lap complete. New personal best").
+  - **Telemetry Alerts:** "Energy low. Seek boost pads." / "Overdrive engaged."
+  - **Race Finish:** Verbal ranking (e.g., "You placed 1st").
+
+### 🎸 Synthesis & Filters
+- **FM Synthesis:** Carrier-Modulator setups for growl movements.
+- **Bitcrusher:** ScriptProcessorNode simulating 16-bit/4-bit depth for SNES-style digital warmth.
+- **Filter:** BiquadFilterNode (Lowpass) to muffle digital harshness.
+
+## 📁 5. File Structure
+- `src/audio/audio.js`: Primary WebAudio engine, TTS handlers, and synthesizer definitions.
+
+---
+*Last Updated: 2026-03-03 - Documentation Overhaul.*

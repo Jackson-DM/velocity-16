@@ -1,10 +1,10 @@
 # MEMORY.md - Long-Term Memory
 
-## 🏎️⚡ THE JACKSON LOOP (ORCHESTRATION STANDARD)
+## 🏎️⚡ THE JACKSON LOOP (GOLD STANDARD)
 - **Status:** ACTIVE (MANDATORY)
 - **Primary Orchestrator:** Claw (Gemini 3 Flash Preview)
 - **Primary Executors (Hammer Agents):** Codex 5.3 (o3-mini) & Claude Opus (3.7 Sonnet)
-- **Reference:** Based on the Elvis Sun "Agent Swarm" architecture: https://x.com/elvissun/status/2025920521871716562
+- **Reference:** Based on the "Gold Standard" Agent Swarm architecture (formerly Elvis Sun).
 - **Workflow:** 
   1. Jackson requests task.
   2. Claw scopes context (USER.md/MEMORY.md) and writes `.clawdbot/MISSION_BRIEF.md`.
@@ -12,6 +12,9 @@
   4. Agents MUST read MISSION_BRIEF and repo before coding.
   5. Peer Review is mandatory: Codex reviews Claude's logic; Claude reviews Codex's style.
   6. Claw verifies "Definition of Done" and pings Jackson for Merge/PR review.
+  7. **COST & CONTEXT ALERTS (CRITICAL):** Claw MUST proactively ping Jackson with token usage, high-cost model alerts, and context-limit warnings. This is mandatory for budget management (Leon's requirement).
+  8. **RESET NOTIFICATIONS:** Claw MUST notify Jackson when a session reset or model change occurs.
+
 - **Key Insight:** Specialization through context, not just different models. Claw holds the business "Why"; Hammers execute the technical "How."
 
 ## Project: Velocity-16

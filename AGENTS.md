@@ -6,7 +6,7 @@ This folder is home. Treat it that way.
 
 If `BOOTSTRAP.md` exists, that's your birth certificate. Follow it, figure out who you are, then delete it. You won't need it again.
 
-## 🔄 THE JACKSON LOOP (MANDATORY WORKFLOW)
+## 🔄 THE JACKSON LOOP (THE GOLD STANDARD)
 
 Before any merge to `main`, Claw (Orchestrator) must follow these 8 steps:
 1. **Scope:** Check `USER.md` and `MEMORY.md`.

@@ -5,143 +5,146 @@
 
 import { getColor, _ } from './palette.js';
 
+/**
+ * 24x16 Sprite Matrices
+ * O: Matte Black, R: Neon Red, M: Neon Magenta, W: White, Y: Neon Yellow, 
+ * C: Neon Cyan, n: Neon Green, p: Void Purple, i: Iron Grey
+ * G: Engine Glow (Flicker target)
+ */
+
 export const SPRITES = {
+    // APEX-RED: Matte Black hull, Red accents, Cyan dual thrusters
     APEX_RED_NEUTRAL: [
-        _,_,_,_,_,_,_,_,'O','O','O','O','O','O','O','O',_,_,_,_,_,_,_,_,
-        _,_,_,_,_,'O','O','O','M','M','M','M','M','M','M','M','O','O','O',_,_,_,_,_,
-        _,_,_,'O','O','M','R','R','R','R','R','R','R','R','R','R','R','M','O','O','O',_,_,_,
-        _,_,'O','R','R','R','R','O','O','O','W','W','O','O','O','R','R','R','R','R','R','O',_,_,
-        _,'O','R','R','R','R','O','M','M','R','R','R','R','M','M','O','R','R','R','R','R','R','O',_,
-        'O','R','R','R','O','O','M','M','M','O','O','O','O','M','M','M','O','O','R','R','R','R','R','O',
-        'O','M','M','O','O','M','M','M','M','M','O','O','M','M','M','M','M','O','O','M','M','R','R','O',
-        'O','M','M','O','M','G','G','M','M','M','M','M','M','M','G','G','M','O','M','M','M','M','R','O',
-        'O','M','M','O','G','G','G','G','M','M','M','M','M','G','G','G','G','O','M','M','M','M','R','O',
-        'O','O','O','O','G','G','Y','G','G','O','O','O','O','G','G','Y','G','G','O','O','O','O','O','O',
-        _,'O','O','G','G','G','Y','G','G','G','G','G','G','G','G','Y','G','G','G','G','O','O',_,_,
-        _,_,'O','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','O',_,_,_,
-        _,_,_,'O','O','O','G','G','G','G','G','G','G','G','G','G','G','G','O','O','O',_,_,_,
+        _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+        _,_,_,_,_,_,_,'O','O','O','O','O','O','O','O',_,_,_,_,_,_,_,_,_,
+        _,_,_,'O','O','O','O','R','R','R','R','R','R','O','O','O','O',_,_,_,_,_,_,_,
+        _,_,'O','R','R','R','R','R','W','W','W','W','R','R','R','R','R','O',_,_,_,_,_,_,
+        _,'O','R','R','M','M','M','M','M','M','M','M','M','M','R','R','R','O',_,_,_,_,_,_,
+        'O','R','R','M','M','M','M','M','M','M','M','M','M','M','M','R','R','O',_,_,_,_,_,_,
+        'O','O','O','O','O','O','O','O','O','O','O','O','O','O','O','O','O','O',_,_,_,_,_,_,
+        'O','O','i','i','i','O','O','C','C','O','O','C','C','O','O','i','i','i','O','O',_,_,_,_,
+        'O','i','i','i','i','i','C','G','G','C','C','G','G','C','i','i','i','i','i','O',_,_,_,_,
+        'O','i','i','i','i','i','C','G','G','C','C','G','G','C','i','i','i','i','i','O',_,_,_,_,
+        'O','O','i','i','i','O','O','C','C','O','O','C','C','O','O','i','i','i','O','O',_,_,_,_,
+        _,_,'O','O','O',_,_,_,_,_,_,_,_,_,_,_,'O','O','O',_,_,_,_,_,
+        _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+        _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+        _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+        _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
     ],
-    PLASMA_REEF: [
-        _,_,_,_,_,_,_,'O','O','O','O','O','O','O','O','O','O',_,_,_,_,_,_,_,
-        _,_,_,_,_,'O','O','b','b','b','b','b','b','b','b','b','b','O','O',_,_,_,_,_,
-        _,_,_,'O','O','b','b','b','b','b','b','b','b','b','b','b','b','b','O','O',_,_,_,_,
-        _,_,'O','b','b','b','b','O','O','O','W','W','O','O','O','b','b','b','b','b','O',_,_,_,
-        _,'O','b','b','b','b','O','M','M','b','b','b','b','M','M','O','b','b','b','b','b','O',_,_,
-        'O','b','b','b','O','O','M','M','M','O','O','O','O','M','M','M','O','O','b','b','b','b','b','O',
-        'O','M','M','O','O','M','M','M','M','M','O','O','M','M','M','M','M','O','O','M','M','b','b','O',
-        'O','M','M','O','M','G','G','M','M','M','M','M','M','M','G','G','M','O','M','M','M','M','b','O',
-        'O','M','M','O','G','G','G','G','M','M','M','M','M','G','G','G','G','O','M','M','M','M','b','O',
-        'O','O','O','O','G','G','b','G','G','O','O','O','O','G','G','b','G','G','O','O','O','O','O','O',
-        _,'O','O','G','G','G','b','G','G','G','G','G','G','G','G','b','G','G','G','G','O','O',_,_,
-        _,_,'O','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','O',_,_,_,
-        _,_,_,'O','O','O','G','G','G','G','G','G','G','G','G','G','G','G','O','O','O',_,_,_,
+
+    // JUGGERNAUT-7: Yellow/Black industrial armor, Orange twin-burners
+    JUGGERNAUT_7_NEUTRAL: [
+        _,_,_,_,_,_,_,_,'O','O','O','O','O','O',_,_,_,_,_,_,_,_,_,_,
+        _,_,_,'O','O','O','O','Y','Y','Y','Y','Y','Y','O','O','O','O',_,_,_,_,_,_,_,
+        _,_,'O','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','O',_,_,_,_,_,_,
+        _,'O','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','O',_,_,_,_,_,_,
+        'O','Y','Y','Y','O','O','O','O','O','O','O','O','O','O','Y','Y','Y','O',_,_,_,_,_,_,
+        'O','Y','Y','O','i','i','i','i','i','i','i','i','i','i','O','Y','Y','O',_,_,_,_,_,_,
+        'O','Y','Y','O','i','i','i','i','i','i','i','i','i','i','O','Y','Y','O',_,_,_,_,_,_,
+        'O','O','O','O','i','i','Y','Y','Y','i','i','Y','Y','Y','i','i','O','O','O','O',_,_,_,_,
+        _,'O','i','i','i','Y','G','G','Y','i','i','Y','G','G','Y','i','i','i','O',_,_,_,_,_,
+        _,'O','i','i','i','Y','G','G','Y','i','i','Y','G','G','Y','i','i','i','O',_,_,_,_,_,
+        _,'O','O','O','O','i','Y','Y','Y','i','i','Y','Y','Y','i','O','O','O','O',_,_,_,_,_,
+        _,_,_,_,_,'O','O','O','O','O','O','O','O','O','O',_,_,_,_,_,_,_,_,_,
+        _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+        _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+        _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+        _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
     ],
-    IRON_VULTURE: [
-        _,_,_,_,_,_,_,'O','O','O','g','g','g','g','O','O','O',_,_,_,_,_,_,_,
-        _,_,_,_,_,'g','g','g','g','g','g','g','g','g','g','g','g',_,_,_,_,_,_,_,
-        _,_,_,'O','g','g','g','g','g','g','g','g','g','g','g','g','g','g','O',_,_,_,_,_,
-        _,_,'O','g','g','g','g','O','O','O','W','W','O','O','O','g','g','g','g','O',_,_,_,
-        _,'O','i','i','i','i','O','g','g','g','g','g','g','g','g','O','i','i','i','i','O',_,_,
-        'O','i','i','i','O','O','g','g','g','O','O','O','O','g','g','g','O','O','i','i','i','i','O',
-        'O','g','g','O','O','i','i','i','i','i','O','O','i','i','i','i','i','O','O','g','g','O',_,
-        'O','g','g','O','i','G','G','i','i','i','i','i','i','i','G','G','i','O','i','i','i','i','O',
-        'O','g','g','O','G','G','G','G','i','i','i','i','i','G','G','G','G','O','i','i','i','i','O',
-        'O','O','O','O','G','G','g','G','G','O','O','O','O','G','G','g','G','G','O','O','O','O','O','O',
-        _,'O','O','G','G','G','g','G','G','G','G','G','G','G','G','g','G','G','G','G','O','O',_,_,
-        _,_,'O','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','O',_,_,_,
-        _,_,_,'O','O','O','G','G','G','G','G','G','G','G','G','G','G','G','O','O','O',_,_,_,
-    ],
-    PLASMA_PRISM: [
-        _,_,_,_,_,_,_,_,'O','O','b','b','b','b','O','O',_,_,_,_,_,_,_,_,
-        _,_,_,_,_,'O','O','b','b','b','b','b','b','b','b','O','O',_,_,_,_,_,
-        _,_,_,'O','O','b','b','b','C','C','C','C','C','C','b','b','b','O','O',_,_,_,_,
-        _,_,'O','b','b','b','b','O','C','C','W','W','C','C','O','b','b','b','b','O',_,_,_,
-        _,'O','b','b','b','b','O','b','b','C','C','C','C','b','b','O','b','b','b','b','O',_,_,
-        'O','b','b','b','O','O','b','b','b','O','O','O','O','b','b','b','O','O','b','b','b','b','O',
-        'O','b','b','O','O','b','b','b','b','b','O','O','b','b','b','b','b','O','O','b','b','b','O',
-        'O','b','b','O','b','G','G','b','b','b','b','b','b','b','G','G','b','O','b','b','b','b','O',
-        'O','b','b','O','G','G','G','G','b','b','b','b','b','G','G','G','G','O','b','b','b','b','O',
-        'O','O','O','O','G','G','C','G','G','O','O','O','O','G','G','C','G','G','O','O','O','O','O','O',
-        _,'O','O','G','G','G','C','G','G','G','G','G','G','G','G','C','G','G','G','G','O','O',_,_,
-        _,_,'O','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','O',_,_,_,
-        _,_,_,'O','O','O','G','G','G','G','G','G','G','G','G','G','G','G','O','O','O',_,_,_,
-    ],
-    VOID_STALKER: [
-        _,_,_,_,_,_,_,_,'O','O','O','O','O','O','O','O',_,_,_,_,_,_,_,_,
-        _,_,_,_,_,'O','O','p','p','p','p','p','p','p','p','O','O',_,_,_,_,_,
-        _,_,_,'O','O','p','p','p','p','p','p','p','p','p','p','p','p','O','O',_,_,_,_,
-        _,_,'O','p','p','p','p','O','O','O','W','W','O','O','O','p','p','p','p','O',_,_,_,
-        _,'O','p','p','p','p','O','p','p','p','p','p','p','p','p','O','p','p','p','p','O',_,_,
-        'O','p','p','p','O','O','p','p','p','O','O','O','O','p','p','p','O','O','p','p','p','p','O',
-        'O','p','p','O','O','p','p','p','p','p','O','O','p','p','p','p','p','O','O','p','p','p','O',
-        'O','p','p','O','p','G','G','p','p','p','p','p','p','p','G','G','p','O','p','p','p','p','O',
-        'O','p','p','O','G','G','G','G','p','p','p','p','p','G','G','G','G','O','p','p','p','p','O',
-        'O','O','O','O','G','G','p','G','G','O','O','O','O','G','G','p','G','G','O','O','O','O','O','O',
-        _,'O','O','G','G','G','p','G','G','G','G','G','G','G','G','p','G','G','G','G','O','O',_,_,
-        _,_,'O','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','O',_,_,_,
-        _,_,_,'O','O','O','G','G','G','G','G','G','G','G','G','G','G','G','O','O','O',_,_,_,
-    ],
-    NEON_FANG: [
-        _,_,_,_,_,_,_,_,'O','O','O','O','O','O','O','O',_,_,_,_,_,_,_,_,
-        _,_,_,_,_,'O','O','n','n','n','n','n','n','n','n','O','O',_,_,_,_,_,
-        _,_,_,'O','O','n','n','n','n','n','n','n','n','n','n','n','n','O','O',_,_,_,_,
-        _,_,'O','n','n','n','n','O','O','O','W','W','O','O','O','n','n','n','n','O',_,_,_,
-        _,'O','n','n','n','n','O','n','n','n','n','n','n','n','n','O','n','n','n','n','O',_,_,
-        'O','n','n','n','O','O','n','n','n','O','O','O','O','n','n','n','O','O','n','n','n','n','O',
-        'O','n','n','O','O','n','n','n','n','n','O','O','n','n','n','n','n','O','O','n','n','n','O',
-        'O','n','n','O','n','G','G','n','n','n','n','n','n','n','G','G','n','O','n','n','n','n','O',
-        'O','n','n','O','G','G','G','G','n','n','n','n','n','G','G','G','G','O','n','n','n','n','O',
-        'O','O','O','O','G','G','n','G','G','O','O','O','O','G','G','n','G','G','O','O','O','O','O','O',
-        _,'O','O','G','G','G','n','G','G','G','G','G','G','G','G','n','G','G','G','G','O','O',_,_,
-        _,_,'O','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','O',_,_,_,
-        _,_,_,'O','O','O','G','G','G','G','G','G','G','G','G','G','G','G','O','O','O',_,_,_,
-    ],
-    CYBER_NAPA: [
-        _,_,_,_,_,_,_,_,'O','O','O','O','O','O','O','O',_,_,_,_,_,_,_,_,
-        _,_,_,_,_,'O','O','n','n','G','G','G','G','n','n','O','O',_,_,_,_,_,
-        _,_,_,'O','O','n','n','n','n','n','n','n','n','n','n','n','n','O','O',_,_,_,_,
-        _,_,'O','n','n','n','n','O','O','O','W','W','O','O','O','n','n','n','n','O',_,_,_,
-        _,'O','g','g','g','g','O','n','n','n','n','n','n','n','n','O','g','g','g','g','O',_,_,
-        'O','g','g','g','O','O','n','n','n','O','O','O','O','n','n','n','O','O','g','g','g','g','O',
-        'O','n','n','O','O','n','n','n','n','n','O','O','n','n','n','n','n','O','O','n','n','n','O',
-        'O','n','n','O','n','G','G','n','n','n','n','n','n','n','G','G','n','O','n','n','n','n','O',
-        'O','n','n','O','G','G','G','G','n','n','n','n','n','G','G','G','G','O','n','n','n','n','O',
-        'O','O','O','O','G','G','Y','G','G','O','O','O','O','G','G','Y','G','G','O','O','O','O','O','O',
-        _,'O','O','G','G','G','Y','G','G','G','G','G','G','G','G','Y','G','G','G','G','O','O',_,_,
-        _,_,'O','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','G','O',_,_,_,
-        _,_,_,'O','O','O','G','G','G','G','G','G','G','G','G','G','G','G','O','O','O',_,_,_,
+
+    // VAPOR-SKIMMER: Narrow, Purple/Black frame, Green neon stinger thrusters
+    VAPOR_SKIMMER_NEUTRAL: [
+        _,_,_,_,_,_,_,_,_,_,'O','O',_,_,_,_,_,_,_,_,_,_,_,_,
+        _,_,_,_,_,_,_,_,_,'O','p','p','O',_,_,_,_,_,_,_,_,_,_,_,
+        _,_,_,_,_,_,_,_,_,'O','p','p','O',_,_,_,_,_,_,_,_,_,_,_,
+        _,_,_,_,_,'O','O','O','O','p','W','W','p','O','O','O','O',_,_,_,_,_,_,_,
+        _,_,_,_,'O','p','p','p','p','p','p','p','p','p','p','p','O',_,_,_,_,_,_,_,
+        _,_,_,_,'O','p','p','p','p','p','p','p','p','p','p','p','O',_,_,_,_,_,_,_,
+        _,'O','O','O','O','O','O','O','O','O','O','O','O','O','O','O','O','O','O',_,_,_,_,_,
+        'O','p','p','p','p','O','n','n','O','O','O','O','n','n','O','p','p','p','p','O',_,_,_,_,
+        'O','p','p','p','p','O','n','G','n','O','O','n','G','n','O','p','p','p','p','O',_,_,_,_,
+        'O','p','p','p','p','O','n','G','n','O','O','n','G','n','O','p','p','p','p','O',_,_,_,_,
+        'O','O','O','O','O','O','n','n','O','O','O','O','n','n','O','O','O','O','O','O',_,_,_,_,
+        _,_,_,_,_,_,_,'O','O',_,_,_,'O','O',_,_,_,_,_,_,_,_,_,_,
+        _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+        _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+        _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
+        _,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_,
     ]
 };
 
 export const PILOTS = [
-    { name: 'Apex-Red', sprite: 'APEX_RED_NEUTRAL', color: '#ff0000', aiStyle: 'player' },
-    { name: 'Plasma-Reef', sprite: 'PLASMA_REEF', color: '#00d4ff', aiStyle: 'aggressive' },
-    { name: 'Iron-Vulture', sprite: 'IRON_VULTURE', color: '#d4af37', aiStyle: 'defensive' },
-    { name: 'Plasma-Prism', sprite: 'PLASMA_PRISM', color: '#00d4ff', aiStyle: 'balanced' },
-    { name: 'Void-Stalker', sprite: 'VOID_STALKER', color: '#8a2be2', aiStyle: 'sneaky' },
-    { name: 'Neon-Fang', sprite: 'NEON_FANG', color: '#39ff14', aiStyle: 'aggressive' },
-    { name: 'Cyber-Napa', sprite: 'CYBER_NAPA', color: '#39ff14', aiStyle: 'balanced' }
+    { 
+        name: 'Jackson', 
+        machine: 'APEX RED', 
+        sprite: 'APEX_RED_NEUTRAL', 
+        color: '#ff0000', 
+        aiStyle: 'player',
+        bio: 'HETEROCHROMIA (CYAN/MAGENTA) | MUSCULAR',
+        specs: 'TOP SPEED: 480 KM/H | ACCEL: S',
+        mass: 1.0
+    },
+    { 
+        name: 'Baron', 
+        machine: 'JUGGERNAUT-7', 
+        sprite: 'JUGGERNAUT_7_NEUTRAL', 
+        color: '#d4af37', 
+        aiStyle: 'heavy',
+        bio: 'GREY BEARD | FACIAL SCAR | HEAVY ARMOR',
+        specs: 'TOP SPEED: 520 KM/H | ARMOR: S',
+        mass: 2.0
+    },
+    { 
+        name: 'Lyra', 
+        machine: 'VAPOR SKIMMER', 
+        sprite: 'VAPOR_SKIMMER_NEUTRAL', 
+        color: '#39ff14', 
+        aiStyle: 'light',
+        bio: 'CYBER-VISOR | CIRCUIT HIGHLIGHTS',
+        specs: 'TOP SPEED: 440 KM/H | HANDLING: S',
+        mass: 0.5
+    },
+    { 
+        name: 'Master-Remix', 
+        machine: 'NEON SYMPHONY', 
+        sprite: 'APEX_RED_NEUTRAL', 
+        color: '#ff00ff', 
+        aiStyle: 'erratic',
+        bio: 'IRIDESCENT HELMET | MAGENTA GALAXY',
+        specs: 'TOP SPEED: 440 KM/H | BOOST: S',
+        mass: 0.8
+    }
 ];
 
 export class SpriteRenderer {
     constructor(ctx) {
         this.ctx = ctx;
+        this.frame = 0;
     }
 
-    renderSprite(data, x, y, shearOffset = 0, scale = 1) {
-        const pixelSize = 2 * scale; // Scaled for retro feel
-        const sx = x - (24 * pixelSize / 2);
-        const sy = y - (13 * pixelSize / 2); // Corrected height from 16 to 13
+    renderSprite(data, x, y, shearOffset = 0, scale = 1, isAccelerating = true) {
+        this.frame++;
+        const pixelSize = 2 * scale; 
+        const cols = 24;
+        const rows = 16;
+        const sx = x - (cols * pixelSize / 2);
+        const sy = y - (rows * pixelSize / 2);
 
-        for (let r = 0; r < 13; r++) {
-            // Calculate tilt: row-based shift for banking
-            // row 0 (top) shifts most, row 12 (bottom) shifts least or vice versa
-            // Let's shift top more to create a leaning effect
-            const rowShear = (12 - r) * (shearOffset * 0.5);
+        // Thruster flicker logic
+        const flicker = isAccelerating && (Math.floor(this.frame / 2) % 2 === 0);
 
-            for (let c = 0; c < 24; c++) {
-                const colorCode = data[r * 24 + c];
-                if (colorCode === null || colorCode === _) continue;
+        for (let r = 0; r < rows; r++) {
+            const rowShear = (rows - 1 - r) * (shearOffset * 0.4);
+
+            for (let c = 0; c < cols; c++) {
+                let colorCode = data[r * cols + c];
+                if (!colorCode || colorCode === _) continue;
+
+                // Handle thruster flicker
+                if (colorCode === 'G' && !flicker) {
+                    continue; // Skip glowing pixel for this frame
+                }
 
                 const finalX = sx + (c * pixelSize) + rowShear;
                 this.ctx.fillStyle = getColor(colorCode);
@@ -150,3 +153,4 @@ export class SpriteRenderer {
         }
     }
 }
+
