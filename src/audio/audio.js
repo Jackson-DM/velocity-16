@@ -163,6 +163,40 @@ class AudioEngine {
     osc.start(); osc.stop(t + 0.15);
   }
 
+  onMachineLost() {
+    if (!this.isStarted) return;
+    const t = this.ctx.currentTime;
+
+    const buf = this.ctx.createBuffer(1, (this.ctx.sampleRate * 0.45) | 0, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) {
+      const fade = 1 - i / d.length;
+      d[i] = (Math.random() * 2 - 1) * fade;
+    }
+
+    const noise = this.ctx.createBufferSource();
+    const ng = this.ctx.createGain();
+    const nf = this.ctx.createBiquadFilter();
+    noise.buffer = buf;
+    nf.type = 'lowpass';
+    nf.frequency.setValueAtTime(1200, t);
+    nf.frequency.exponentialRampToValueAtTime(180, t + 0.45);
+    ng.gain.setValueAtTime(0.36, t);
+    ng.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+    noise.connect(nf); nf.connect(ng); ng.connect(this.masterGain);
+    noise.start(t);
+
+    const osc = this.ctx.createOscillator();
+    const og = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(120, t);
+    osc.frequency.exponentialRampToValueAtTime(32, t + 0.5);
+    og.gain.setValueAtTime(0.26, t);
+    og.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    osc.connect(og); og.connect(this.masterGain);
+    osc.start(t); osc.stop(t + 0.5);
+  }
+
   onBoost() {
     if (!this.isStarted) return;
     const osc = this.ctx.createOscillator();
@@ -176,6 +210,95 @@ class AudioEngine {
     gain.connect(this.masterGain);
     osc.start();
     osc.stop(this.ctx.currentTime + 0.4);
+  }
+
+  // ── Countdown beeps ────────────────────────────────────────────────────────
+  // '3'=180Hz, '2'=200Hz, '1'=240Hz square wave 120ms each.
+  // 'go'=220→880Hz sawtooth sweep 300ms.
+  onCountdownBeep(phase) {
+    if (!this.isStarted) return;
+    const t = this.ctx.currentTime;
+    const osc  = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    if (phase === 'go') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, t);
+      osc.frequency.exponentialRampToValueAtTime(880, t + 0.3);
+      gain.gain.setValueAtTime(0.18, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+      osc.connect(gain); gain.connect(this.masterGain);
+      osc.start(); osc.stop(t + 0.3);
+    } else {
+      const freqMap = { '3': 180, '2': 200, '1': 240 };
+      const freq    = freqMap[phase] || 180;
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.12, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.12);
+      osc.connect(gain); gain.connect(this.masterGain);
+      osc.start(); osc.stop(t + 0.12);
+    }
+  }
+
+  // ── Race start jingle ─────────────────────────────────────────────────────
+  // 4-note ascending triangle: 440→554→659→880Hz.
+  // Scheduled precisely via Web Audio time offsets.
+  onRaceStart() {
+    if (!this.isStarted) return;
+    const t     = this.ctx.currentTime;
+    const freqs = [440, 554, 659, 880];
+    const durs  = [0.08, 0.08, 0.08, 0.16];
+
+    freqs.forEach((freq, i) => {
+      const start = t + i * 0.08;
+      const osc  = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.14, start);
+      gain.gain.exponentialRampToValueAtTime(0.01, start + durs[i]);
+      osc.connect(gain); gain.connect(this.masterGain);
+      osc.start(start); osc.stop(start + durs[i]);
+    });
+  }
+
+  // ── Podium fanfare ────────────────────────────────────────────────────────
+  // 6-note layered sweep over 2s.
+  // Lead sawtooth: C5→E5→G5→C6 (523→659→784→1047Hz).
+  // Harmony triangle at 0.6× gain: G4→B4→D5→G5 (392→494→587→784Hz).
+  onPodiumFanfare() {
+    if (!this.isStarted) return;
+    const t = this.ctx.currentTime;
+
+    const leadFreqs = [523, 659, 784, 1047];
+    const harmFreqs = [392, 494, 587, 784];
+    const times     = [0, 0.35, 0.70, 1.05];
+    const noteDur   = 0.55;
+
+    leadFreqs.forEach((freq, i) => {
+      const st   = t + times[i];
+      const osc  = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, st);
+      gain.gain.setValueAtTime(0.18, st);
+      gain.gain.linearRampToValueAtTime(0, st + noteDur);
+      osc.connect(gain); gain.connect(this.masterGain);
+      osc.start(st); osc.stop(st + noteDur);
+    });
+
+    harmFreqs.forEach((freq, i) => {
+      const st   = t + times[i];
+      const osc  = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, st);
+      gain.gain.setValueAtTime(0.11, st);
+      gain.gain.linearRampToValueAtTime(0, st + noteDur);
+      osc.connect(gain); gain.connect(this.masterGain);
+      osc.start(st); osc.stop(st + noteDur);
+    });
   }
 }
 

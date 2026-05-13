@@ -2,11 +2,11 @@
 // Master relation: THRUST = TOP_SPEED * DRAG_FWD (equilibrium at top speed)
 import { wrapAngle } from '../utils/math.js';
 
-export const THRUST     = 720;   // = TOP_SPEED * DRAG_FWD
+export const THRUST     = 576;   // = TOP_SPEED * DRAG_FWD
 export const DRAG_FWD   = 1.2;   // forward drag decay constant — 0.58s to 50% top speed
-export const TOP_SPEED  = 600;   // WU/s target top speed
+export const TOP_SPEED  = 480;   // WU/s target top speed (reduced 20% for better control feel)
 export const GRIP       = 3.5;   // lateral decay — ~30% drift ratio at equilibrium
-export const TURN_BASE  = 2.8;   // rad/s — must exceed v/r_min (600/229≈2.62) to navigate tightest oval curve
+export const TURN_BASE  = 2.8;   // rad/s — still enough to navigate tightest oval curve at new top speed
 export const BRAKE_DRAG = 3.07;  // full stop in ~1.57s
 
 // updateHover — 12-step drift algorithm (order matters: turn BEFORE velocity reproject = drift source)
@@ -25,7 +25,10 @@ export function updateHover(world, input, dt) {
   // At top speed turnFactor=1.0, giving the full TURN_BASE rate needed to
   // navigate the tightest oval curves (r≈229 WU requires ≥2.62 rad/s at 600 WU/s).
   const normSpeed  = world.speed / TOP_SPEED;
-  const turnFactor = 0.20 + 0.80 * normSpeed;
+  const baseTurnFactor = 0.20 + 0.80 * normSpeed;
+  const lowSpeedPivot = !input.up && normSpeed < 0.28;
+  const pivotAssist = input.down ? 0.78 : 0.64;
+  const turnFactor = lowSpeedPivot ? Math.max(baseTurnFactor, pivotAssist) : baseTurnFactor;
   if (input.left)  world.heading = wrapAngle(world.heading - TURN_BASE * turnFactor * dt);
   if (input.right) world.heading = wrapAngle(world.heading + TURN_BASE * turnFactor * dt);
   // fwd/lat NOT recalculated after heading change — this mismatch IS the drift source
@@ -35,6 +38,7 @@ export function updateHover(world, input, dt) {
 
   // 6. Brake
   if (input.down) fwd *= Math.exp(-BRAKE_DRAG * dt);
+  if (!input.up && Math.abs(fwd) < 0.75) fwd = 0;
 
   // 7–8. Drag decay
   fwd *= Math.exp(-DRAG_FWD * dt);

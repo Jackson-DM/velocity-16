@@ -1,59 +1,103 @@
-// MUTE CITY I — closed oval circuit definition.
-// Oval: center (512,512), semi-axis A=300 (E-W), semi-axis B=262 (N-S).
-// World convention: heading=0 = east (+X), positive Y = south (screen-down).
-// Car travels clockwise on screen.
-//
-// 8 checkpoints parameterised at -90°,-45°,0°,45°,90°,135°,180°,-135°.
-// Each gate: line segment perpendicular to the forward tangent, half-width hw=100.
-// Gate endpoints pre-computed (no per-frame trig):
-//   A = (cx - ny*hw, cy + nx*hw)
-//   B = (cx + ny*hw, cy - nx*hw)
-// where (nx,ny) is the normalised clockwise tangent at that oval position.
+// Track definitions share one contract:
+// - startX/startY/startHeading spawn the player.
+// - checkpoints are ordered clockwise; index 0 is start/finish.
+// - bounds describes the analytical oval used by collision and texture passes.
 
-export const TRACK_01 = {
-  name:        'MUTE CITY I',
-  textureKey:  'track-surface',
-  collisionSrc: null,
-  totalLaps:   3,
+const DEFAULT_ANGLES = [
+  -Math.PI / 2,
+  -Math.PI / 4,
+   0,
+   Math.PI / 4,
+   Math.PI / 2,
+   3 * Math.PI / 4,
+   Math.PI,
+  -3 * Math.PI / 4,
+];
 
-  // Car spawn — placed at CP0, nose pointing east
-  startX:      512,
-  startY:      250,
-  startHeading: 0,   // radians; 0 = east (+X)
+function makeCheckpoint(bounds, angle, hw) {
+  const { cx, cy, a, b } = bounds;
+  const c = Math.cos(angle);
+  const s = Math.sin(angle);
+  const px = cx + a * c;
+  const py = cy + b * s;
 
-  // Checkpoints — index 0 is the start/finish line.
-  // Lap logic skips CP0 on the first pass (nextCp starts at 1).
-  checkpoints: [
-    // CP0  angle=-90° (top of oval, going east)
-    { cx: 512, cy: 250, nx:  1.000, ny:  0.000, hw: 100,
-      ax: 512, ay: 350, bx: 512, by: 150 },
+  // Clockwise tangent for increasing ellipse angle.
+  const tx = -a * s;
+  const ty =  b * c;
+  const len = Math.sqrt(tx * tx + ty * ty);
+  const nx = tx / len;
+  const ny = ty / len;
 
-    // CP1  angle=-45° (upper-right curve, going SE)
-    { cx: 724, cy: 327, nx:  0.753, ny:  0.658, hw: 100,
-      ax: 658, ay: 402, bx: 790, by: 252 },
+  return {
+    cx: Math.round(px),
+    cy: Math.round(py),
+    nx: Number(nx.toFixed(3)),
+    ny: Number(ny.toFixed(3)),
+    hw,
+    ax: Math.round(px - ny * hw),
+    ay: Math.round(py + nx * hw),
+    bx: Math.round(px + ny * hw),
+    by: Math.round(py - nx * hw),
+  };
+}
 
-    // CP2  angle=0°   (right side, going south)
-    { cx: 812, cy: 512, nx:  0.000, ny:  1.000, hw: 100,
-      ax: 712, ay: 512, bx: 912, by: 512 },
+function createOvalTrack({
+  name,
+  textureKey,
+  totalLaps,
+  bounds,
+  checkpointHalfWidth,
+}) {
+  return {
+    name,
+    textureKey,
+    collisionSrc: 'analytical-oval',
+    totalLaps,
+    bounds,
+    startX: bounds.cx,
+    startY: bounds.cy - bounds.b,
+    startHeading: 0,
+    checkpoints: DEFAULT_ANGLES.map((angle) => makeCheckpoint(bounds, angle, checkpointHalfWidth)),
+  };
+}
 
-    // CP3  angle=45°  (lower-right curve, going SW)
-    { cx: 724, cy: 697, nx: -0.753, ny:  0.658, hw: 100,
-      ax: 658, ay: 622, bx: 790, by: 772 },
+export const TRACK_TEST = createOvalTrack({
+  name: 'FEEL LAB 02',
+  textureKey: 'feel-lab-surface',
+  totalLaps: 3,
+  checkpointHalfWidth: 180,
+  bounds: {
+    cx: 1024,
+    cy: 1024,
+    a: 760,
+    b: 500,
+    dInner: 0.72,
+    dOuter: 1.16,
+    edgeWidth: 0.012,
+  },
+});
 
-    // CP4  angle=90°  (bottom, going west)
-    { cx: 512, cy: 774, nx: -1.000, ny:  0.000, hw: 100,
-      ax: 512, ay: 674, bx: 512, by: 874 },
+export const TRACK_01 = createOvalTrack({
+  name: 'MUTE CITY I',
+  textureKey: 'track-surface',
+  totalLaps: 3,
+  checkpointHalfWidth: 100,
+  bounds: {
+    cx: 512,
+    cy: 512,
+    a: 300,
+    b: 262,
+    dInner: 0.65,
+    dOuter: 1.35,
+    edgeWidth: 0.035,
+  },
+});
 
-    // CP5  angle=135° (lower-left curve, going NW)
-    { cx: 300, cy: 697, nx: -0.753, ny: -0.658, hw: 100,
-      ax: 366, ay: 622, bx: 234, by: 772 },
-
-    // CP6  angle=180° (left side, going north)
-    { cx: 212, cy: 512, nx:  0.000, ny: -1.000, hw: 100,
-      ax: 312, ay: 512, bx: 112, by: 512 },
-
-    // CP7  angle=-135° (upper-left curve, going NE)
-    { cx: 300, cy: 327, nx:  0.753, ny: -0.658, hw: 100,
-      ax: 366, ay: 402, bx: 234, by: 252 },
-  ],
+export const TRACKS = {
+  test: TRACK_TEST,
+  official: TRACK_01,
 };
+
+export function getTrackByMode(trackMode) {
+  return TRACKS[trackMode] || TRACK_TEST;
+}

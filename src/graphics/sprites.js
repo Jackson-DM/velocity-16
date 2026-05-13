@@ -1,16 +1,17 @@
 // Phase 2: Procedural 24×16 pixel-art hover car with 9 horizontal-shear tilt frames.
 // All data baked into Uint32Array at startup — no per-frame allocations.
+// Phase 5: blitAiSprite added — perspective-projected opponent blit.
 import { PALETTE } from '../graphics/palette.js';
 import { clamp } from '../utils/math.js';
 
 // ─── Color aliases ────────────────────────────────────────────────────────────
-const O = PALETTE.BLACK;      // outline
-const B = PALETTE.DEEP_BLUE;  // body
-const V = PALETTE.VIOLET;     // fin
-const C = PALETTE.NEON_CYAN;  // cockpit
-const W = PALETTE.WHITE;      // glint
-const G = PALETTE.NEON_GREEN; // engine glow
-const Y = PALETTE.NEON_YELLOW;// nozzle
+const O = PALETTE.BLACK;        // outline
+const B = PALETTE.NEON_MAGENTA; // body (Apex-Red scheme)
+const V = PALETTE.NEON_CYAN;    // fins/trim (Apex-Red scheme)
+const C = PALETTE.NEON_CYAN;    // cockpit glow
+const W = PALETTE.WHITE;        // glint
+const G = PALETTE.NEON_MAGENTA; // engine glow
+const Y = PALETTE.NEON_YELLOW;  // nozzle
 const D = PALETTE.DARK_GRAY;  // shadow
 const _ = 0x00000000;         // transparent (alpha=0)
 
@@ -104,6 +105,70 @@ export function blitCarSprite(buffer, screenW, screenH, sprite, world) {
           buffer[rowBase + dx] = pixel;
         }
       }
+    }
+  }
+}
+
+// ─── blitAiSprite ─────────────────────────────────────────────────────────────
+// Projects an AI racer into screen space using Mode 7 camera math.
+// Only renders if ship is in front of camera (camFwd > 0).
+// Perspective-scaled nearest-neighbor blit with horizon clip.
+export function blitAiSprite(buffer, screenW, screenH, sprite, aiWorld, camera) {
+  const { frames, frameW, frameH } = sprite;
+  const world = aiWorld.world;
+
+  const horizonI  = Math.round(camera.horizon);
+  const cosA      = Math.cos(camera.angle);
+  const sinA      = Math.sin(camera.angle);
+  const camHeight = camera.height;
+
+  // Camera-relative position
+  const dx = world.x - camera.x;
+  const dy = world.y - camera.y;
+
+  // Rotate into camera space
+  const camFwd  = dx * cosA + dy * sinA;
+  const camSide = -dx * sinA + dy * cosA;
+
+  // Must be in front of camera
+  if (camFwd <= 0) return;
+
+  // Screen position of sprite center.
+  // Horizontal: camSide/camFwd in camera space maps to screenW/(2*fov) pixels.
+  // fov is from camera.fov (0.66–0.80 depending on speed breath).
+  const fovScale = screenW / (2 * camera.fov);
+  const screenX  = Math.round(screenW * 0.5 + (camSide / camFwd) * fovScale);
+  const screenY  = Math.round(horizonI + camHeight / camFwd);
+
+  // Perspective scale: closer → bigger, clamped 0.5–3.0
+  const drawScale = clamp(camHeight / camFwd * 0.055, 0.5, 3.0);
+
+  const scaledW = Math.round(frameW * drawScale);
+  const scaledH = Math.round(frameH * drawScale);
+
+  // Tilt frame from drift
+  const tiltFrame = clamp(4 + Math.round(world.drift / 150 * 4), 0, 8);
+  const frameBase = tiltFrame * frameW * frameH;
+
+  const destX = screenX - (scaledW >> 1);
+  const destY = screenY - scaledH;  // anchor bottom of sprite to projected center
+
+  for (let py = 0; py < scaledH; py++) {
+    const sy = destY + py;
+    if (sy < horizonI || sy >= screenH) continue;
+    const srcY = Math.floor(py / drawScale);
+    if (srcY >= frameH) continue;
+
+    for (let px = 0; px < scaledW; px++) {
+      const sx = destX + px;
+      if (sx < 0 || sx >= screenW) continue;
+      const srcX = Math.floor(px / drawScale);
+      if (srcX >= frameW) continue;
+
+      const pixel = frames[frameBase + srcY * frameW + srcX];
+      if ((pixel >>> 24) === 0) continue;  // skip transparent
+
+      buffer[sy * screenW + sx] = pixel;
     }
   }
 }

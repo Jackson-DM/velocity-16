@@ -10,6 +10,8 @@
 // A float horizon causes rowOffset = y * screenW to land mid-row in the
 // Uint32Array, breaking scanline alignment and making the floor "slide."
 
+import { renderStarfield } from '../graphics/starfield.js';
+
 export function renderFloor(outBuffer, screenW, screenH, camera, floorTexture) {
   const { x: camX, y: camY, angle, height: camH, fov } = camera;
   // Snap to integer scanline — prevents mid-row pixel writes when drift
@@ -61,7 +63,8 @@ export function renderFloor(outBuffer, screenW, screenH, camera, floorTexture) {
 }
 
 // Sky: F-Zero style deep space gradient, bright neon glow at horizon.
-export function renderSky(outBuffer, screenW, horizon) {
+// Optional starfield overlay: pass stars array + frame for twinkling.
+export function renderSky(outBuffer, screenW, horizon, starfield = null, frame = 0) {
   // Integer horizon prevents horizon line from landing mid-row.
   const hY = Math.round(horizon);
 
@@ -77,6 +80,11 @@ export function renderSky(outBuffer, screenW, horizon) {
     for (let px = 0; px < screenW; px++) {
       outBuffer[rowOffset + px] = color;
     }
+  }
+
+  // Star overlay — drawn after gradient fill, before horizon line
+  if (starfield) {
+    renderStarfield(outBuffer, screenW, hY, starfield, frame);
   }
 
   // Horizon scanline: bright neon cyan — written at an integer row.

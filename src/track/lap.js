@@ -16,6 +16,8 @@ export function createLapState(totalLaps = 3) {
     nextCp:    1,              // first required checkpoint (skip start line on init)
     lapStart:  performance.now(),
     bestMs:    Infinity,       // Infinity = no completed lap yet
+    totalMs:   0,
+    finishMs:  null,
     events:    [],             // cleared and repopulated each frame; read same frame only
   };
 }
@@ -42,6 +44,7 @@ export function updateLap(lapState, track, prevX, prevY, currX, currY) {
 
       if (isNewBest) lapState.bestMs = lapTimeMs;
 
+      lapState.totalMs += lapTimeMs;
       lapState.lap     += 1;
       lapState.lapStart = nowMs;
       lapState.nextCp   = 1;  // reset to first interior checkpoint for next lap
@@ -49,6 +52,7 @@ export function updateLap(lapState, track, prevX, prevY, currX, currY) {
       lapState.events.push({ type: 'lap', time: lapTimeMs, isNewBest });
 
       if (lapState.lap >= lapState.totalLaps) {
+        lapState.finishMs = lapState.totalMs;
         lapState.events.push({ type: 'finish' });
       }
     } else {

@@ -1,18 +1,22 @@
 // Renderer — owns the game Canvas 2D context.
 // Draw order each frame:
-//   1. Sky          (Uint32Array buffer)
-//   2. Floor        (Uint32Array buffer)
-//   3. Speed lines  (Uint32Array buffer)  — WOW #3
-//   4. Car sprite   (Uint32Array buffer)
-//   5. Scanlines    (Uint32Array buffer)  — CRT darkening pass
-//   6. putImageData (flush to canvas)
+//   1. Sky            (Uint32Array buffer)
+//   2. Floor          (Uint32Array buffer)
+//   3. Exhaust trails (Uint32Array buffer)  — Phase 5
+//   4. Speed lines    (Uint32Array buffer)  — WOW #3
+//   5. AI sprites     (Uint32Array buffer)  — Phase 5
+//   6. Player sprite  (Uint32Array buffer)
+//   7. Scanlines      (Uint32Array buffer)  — CRT darkening pass
+//   8. putImageData (flush to canvas)
 //
 // HUD is drawn by main.js on a separate overlay canvas after render() returns.
 
-import { renderFloor, renderSky } from './mode7.js';
-import { blitCarSprite }          from '../graphics/sprites.js';
-import { PALETTE }                from '../graphics/palette.js';
-import { TOP_SPEED }              from '../physics/hover.js';
+import { renderFloor, renderSky }            from './mode7.js';
+import { blitCarSprite, blitAiSprite }       from '../graphics/sprites.js';
+import { PALETTE }                           from '../graphics/palette.js';
+import { TOP_SPEED }                         from '../physics/hover.js';
+import { renderExhaustTrail }                from '../graphics/exhaust-trail.js';
+import { renderTrackGuideRails }             from '../graphics/track-guide.js';
 
 // ─── WOW #3: Speed lines ─────────────────────────────────────────────────────
 const SPEED_LINE_THRESHOLD = TOP_SPEED * 0.8;  // 480 WU/s trigger
@@ -70,12 +74,31 @@ export function createRenderer(canvas, carSprite = null) {
   const buffer    = new Uint32Array(imageData.data.buffer);
 
   return {
-    render(camera, floorTexture, world = null, frame = 0) {
-      renderSky(buffer, W, camera.horizon);
+    render(camera, floorTexture, world = null, frame = 0, extras = {}) {
+      const { starfield = null, aiWorlds = [], track = null, enableSpeedLines = false } = extras;
+
+      renderSky(buffer, W, camera.horizon, starfield, frame);
       renderFloor(buffer, W, H, camera, floorTexture);
 
-      if (world && world.speed > SPEED_LINE_THRESHOLD) {
+      if (track) {
+        renderTrackGuideRails(buffer, W, H, camera, track);
+      }
+
+      // Exhaust trails — rendered before sprites so ships occlude them
+      for (const ai of aiWorlds) {
+        if (ai.trail) renderExhaustTrail(buffer, W, H, ai.trail, camera);
+      }
+      if (world && extras.playerTrail) {
+        renderExhaustTrail(buffer, W, H, extras.playerTrail, camera);
+      }
+
+      if (enableSpeedLines && world && world.speed > SPEED_LINE_THRESHOLD) {
         drawSpeedLines(buffer, W, H, camera, world, frame);
+      }
+
+      // AI sprites — draw Juggernaut first, Mantis second (player always on top)
+      for (const ai of aiWorlds) {
+        blitAiSprite(buffer, W, H, ai.sprite, ai, camera);
       }
 
       if (carSprite && world) {
