@@ -2,6 +2,7 @@
 // The track bounds are shared with collision so road edge art matches walls.
 
 import { TRACK_01 } from '../track/track-data.js';
+import { findTrackZoneForCoord } from '../track/track-zones.js';
 
 const W = 2048;
 
@@ -18,6 +19,33 @@ const EDGE_GLOW = C(0, 120, 150);
 const VOID_BASE = C(4, 4, 10);
 const VOID_GRID = C(20, 12, 40);
 const LAB_MARKER = C(0, 255, 80);
+const BOOST_A = C(0, 255, 255);
+const BOOST_B = C(255, 210, 0);
+const HAZARD_A = C(255, 80, 0);
+const HAZARD_B = C(255, 0, 50);
+const RECHARGE_A = C(0, 255, 90);
+const RECHARGE_B = C(170, 255, 0);
+
+function zonePixelColor(zone, tx, ty, d) {
+  const stripe = Math.floor((tx + ty) / 18) & 1;
+
+  if (zone.type === 'boost') {
+    const chevron = (Math.floor((tx - ty) / 24) % 4 + 4) % 4;
+    return chevron < 2 ? BOOST_A : BOOST_B;
+  }
+
+  if (zone.type === 'hazard') {
+    const radial = Math.floor(d * 90) & 1;
+    return (stripe ^ radial) ? HAZARD_A : HAZARD_B;
+  }
+
+  if (zone.type === 'recharge') {
+    const pulse = (Math.floor(tx / 20) + Math.floor(ty / 20)) & 1;
+    return pulse ? RECHARGE_A : RECHARGE_B;
+  }
+
+  return null;
+}
 
 export function buildCircuitTexture(track = TRACK_01) {
   const pixels = new Uint32Array(W * W);
@@ -31,6 +59,7 @@ export function buildCircuitTexture(track = TRACK_01) {
       const dx = tx - cx;
       const dy = ty - cy;
       const d = Math.sqrt((dx / a) * (dx / a) + (dy / b) * (dy / b));
+      const angle = Math.atan2(dy / b, dx / a);
       const onRoad = d >= dInner && d <= dOuter;
 
       if (onRoad && (d > dOuter - edgeWidth || d < dInner + edgeWidth)) {
@@ -57,9 +86,14 @@ export function buildCircuitTexture(track = TRACK_01) {
         continue;
       }
 
+      const zone = findTrackZoneForCoord(track, angle, d);
+      if (zone) {
+        pixels[idx] = zonePixelColor(zone, tx, ty, d);
+        continue;
+      }
+
       // Orange braking chevrons before the lab's tightest visual reference zones.
       if (isFeelLab && d > dInner + 0.12 && d < dOuter - 0.12) {
-        const angle = Math.atan2(dy / b, dx / a);
         const nearTurn = Math.abs(Math.sin(angle * 2)) < 0.08;
         const stripe = ((Math.floor(tx / 32) + Math.floor(ty / 32)) & 7) === 0;
         if (nearTurn && stripe) {

@@ -215,6 +215,54 @@ class AudioEngine {
   // ── Countdown beeps ────────────────────────────────────────────────────────
   // '3'=180Hz, '2'=200Hz, '1'=240Hz square wave 120ms each.
   // 'go'=220→880Hz sawtooth sweep 300ms.
+  onBoostPad() {
+    if (!this.isStarted) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(420, t);
+    osc.frequency.exponentialRampToValueAtTime(1500, t + 0.22);
+    gain.gain.setValueAtTime(0.13, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.22);
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.22);
+  }
+
+  onHazard() {
+    if (!this.isStarted) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(180, t);
+    osc.frequency.exponentialRampToValueAtTime(70, t + 0.16);
+    gain.gain.setValueAtTime(0.14, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.16);
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.16);
+  }
+
+  onRecharge() {
+    if (!this.isStarted) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(520, t);
+    osc.frequency.exponentialRampToValueAtTime(880, t + 0.18);
+    gain.gain.setValueAtTime(0.08, t);
+    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(t);
+    osc.stop(t + 0.18);
+  }
+
   onCountdownBeep(phase) {
     if (!this.isStarted) return;
     const t = this.ctx.currentTime;

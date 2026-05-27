@@ -5,5 +5,8 @@ export function createWorld() {
     heading: 0, speed: 0, drift: 0,
     energy: 1.0,      // 0.0 (dead) → 1.0 (full)
     wallCooldown: 0,  // frames of drain immunity post-hit
+    boostPadCooldown: 0,
+    hazardCooldown: 0,
+    rechargeCooldown: 0,
   };
 }

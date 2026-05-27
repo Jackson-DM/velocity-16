@@ -33,7 +33,7 @@ function fmtTime(ms) {
   return `${mins}:${p2(secs)}.${p2(cents)}`;
 }
 
-export function drawHUD(hudCtx, scale, lapState, world, track = null) {
+export function drawHUD(hudCtx, scale, lapState, world, track = null, feedback = null) {
   const W = hudCtx.canvas.width;
   const H = hudCtx.canvas.height;
 
@@ -127,6 +127,28 @@ export function drawHUD(hudCtx, scale, lapState, world, track = null) {
   hudCtx.shadowBlur = Math.max(2, scale);
   hudCtx.strokeRect(barX - 1, barY - 1, barW + 2, barH + 2);
   hudCtx.restore();
+
+  if (feedback && feedback.untilMs > nowMs) {
+    drawZoneFeedback(hudCtx, scale, W, H, feedback, nowMs);
+  }
+}
+
+function drawZoneFeedback(ctx, scale, W, H, feedback, nowMs) {
+  const ttl = Math.max(1, feedback.untilMs - feedback.startedMs);
+  const t = Math.max(0, Math.min(1, (nowMs - feedback.startedMs) / ttl));
+  const alpha = 1 - t;
+  const y = Math.round(H * 0.58 - t * 8 * scale);
+
+  ctx.save();
+  ctx.globalAlpha = Math.max(0, alpha);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `bold ${Math.round(11 * scale)}px "Courier New", monospace`;
+  ctx.shadowColor = '#000';
+  ctx.shadowBlur = Math.max(3, scale * 2);
+  ctx.fillStyle = feedback.color;
+  ctx.fillText(feedback.text, W / 2, y);
+  ctx.restore();
 }
 
 export function drawCrashOverlay(ctx, scale, world, crashState) {

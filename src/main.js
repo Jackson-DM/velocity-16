@@ -11,6 +11,12 @@ import { updateHover, TOP_SPEED } from './physics/hover.js';
 import { buildCarSprite } from './graphics/sprites.js';
 import { drawCrashOverlay, drawHUD } from './graphics/hud.js';
 import { getTrackByMode } from './track/track-data.js';
+import {
+  findTrackZoneAtPoint,
+  findTrackZoneNearCoord,
+  getTrackCoord,
+  pointFromTrackCoord,
+} from './track/track-zones.js';
 import { createLapState, updateLap } from './track/lap.js';
 import { createAudio } from './audio/audio.js';
 import { buildCircuitTexture } from './graphics/track-texture.js';
@@ -119,6 +125,7 @@ let lastTimestamp = 0;
 let frameCount = 0;
 let wasBoost = false;
 let lastSafeState = null;
+let zoneFeedback = null;
 
 snapCameraToStart();
 lastSafeState = { x: world.x, y: world.y, heading: world.heading };
@@ -131,10 +138,9 @@ function ensureAudio() {
   audio.start();
 }
 
-function applyBoost(targetWorld) {
-  const boostImpulse = 380;
-  targetWorld.vx += Math.cos(targetWorld.heading) * boostImpulse;
-  targetWorld.vy += Math.sin(targetWorld.heading) * boostImpulse;
+function applyBoost(targetWorld, impulse = 380) {
+  targetWorld.vx += Math.cos(targetWorld.heading) * impulse;
+  targetWorld.vy += Math.sin(targetWorld.heading) * impulse;
 
   const cap = TOP_SPEED * 1.2;
   const spd = Math.sqrt(targetWorld.vx * targetWorld.vx + targetWorld.vy * targetWorld.vy);
@@ -143,6 +149,16 @@ function applyBoost(targetWorld) {
     targetWorld.vy *= cap / spd;
   }
   targetWorld.speed = Math.sqrt(targetWorld.vx * targetWorld.vx + targetWorld.vy * targetWorld.vy);
+}
+
+function showZoneFeedback(text, color, durationMs = 650) {
+  const now = performance.now();
+  zoneFeedback = {
+    text,
+    color,
+    startedMs: now,
+    untilMs: now + durationMs,
+  };
 }
 
 const voiceBoost = createVoiceBoost(() => {
@@ -160,6 +176,7 @@ function resetRace(toTitle = true) {
   finishPositions = [];
   podiumState = null;
   crashState = null;
+  zoneFeedback = null;
   countdownState = { phase: 'pilot_card', elapsed: 0, pilotIndex: 0, beepFired: false };
   wasBoost = false;
   raceStartMs = 0;
@@ -198,6 +215,9 @@ const PILOT_CARD_DURATION = 2.0;
 const PILOT_BLANK = 0.5;
 const DIGIT_DURATION = 0.85;
 const GO_DURATION = 0.60;
+const RESPAWN_EDGE_MARGIN = 0.16;
+const RESPAWN_HAZARD_ANGLE_MARGIN = 0.09;
+const RESPAWN_HAZARD_RADIAL_MARGIN = 0.10;
 
 function updateCountdownPhase(state, dt) {
   state.elapsed += dt;
@@ -274,9 +294,59 @@ function checkAiFinish(ai) {
   });
 }
 
+function clampRespawnD(d) {
+  const minD = track.bounds.dInner + RESPAWN_EDGE_MARGIN;
+  const maxD = track.bounds.dOuter - RESPAWN_EDGE_MARGIN;
+  return Math.max(minD, Math.min(maxD, d));
+}
+
+function isRespawnHazardCoord(angle, d) {
+  return !!findTrackZoneNearCoord(
+    track,
+    angle,
+    d,
+    'hazard',
+    RESPAWN_HAZARD_ANGLE_MARGIN,
+    RESPAWN_HAZARD_RADIAL_MARGIN,
+  );
+}
+
+function makeRespawnCandidate(angle, d, heading) {
+  const point = pointFromTrackCoord(track, angle, clampRespawnD(d));
+  return { x: point.x, y: point.y, heading };
+}
+
+function makeSafeRespawnState(candidate) {
+  const fallback = { x: track.startX, y: track.startY, heading: track.startHeading };
+  const source = candidate ?? fallback;
+  const coord = getTrackCoord(track, source.x, source.y);
+  const baseD = clampRespawnD(coord.d);
+
+  const candidates = [
+    [coord.angle, baseD],
+    [coord.angle, baseD - 0.18],
+    [coord.angle, baseD + 0.18],
+    [coord.angle - 0.18, baseD],
+    [coord.angle + 0.18, baseD],
+    [coord.angle - 0.32, baseD - 0.12],
+    [coord.angle + 0.32, baseD + 0.12],
+    [coord.angle - 0.48, baseD],
+    [coord.angle + 0.48, baseD],
+  ];
+
+  for (const [angle, d] of candidates) {
+    const safeD = clampRespawnD(d);
+    if (!isRespawnHazardCoord(angle, safeD)) {
+      return makeRespawnCandidate(angle, safeD, source.heading);
+    }
+  }
+
+  return makeRespawnCandidate(coord.angle + 0.65, baseD, source.heading);
+}
+
 function triggerPlayerCrash() {
   if (gameState !== 'playing') return;
-  const respawn = lastSafeState ?? { x: world.x, y: world.y, heading: world.heading };
+  const respawn = makeSafeRespawnState(lastSafeState ?? { x: world.x, y: world.y, heading: world.heading });
   world.energy = 0;
   world.vx = 0;
   world.vy = 0;
@@ -294,7 +364,9 @@ function triggerPlayerCrash() {
 }
 
 function respawnPlayer() {
-  const respawn = crashState?.respawn ?? lastSafeState ?? { x: track.startX, y: track.startY, heading: track.startHeading };
+  const respawn = makeSafeRespawnState(
+    crashState?.respawn ?? lastSafeState ?? { x: track.startX, y: track.startY, heading: track.startHeading },
+  );
   world.x = respawn.x;
   world.y = respawn.y;
   world.heading = respawn.heading;
@@ -304,10 +376,19 @@ function respawnPlayer() {
   world.drift = 0;
   world.energy = 0.35;
   world.wallCooldown = 90;
+  world.boostPadCooldown = 20;
+  world.hazardCooldown = 120;
+  world.rechargeCooldown = 20;
   lastSafeState = { ...respawn };
   crashState = null;
   gameState = 'playing';
   wasBoost = getInput().boost;
+}
+
+function updateZoneCooldowns(targetWorld) {
+  if (targetWorld.boostPadCooldown > 0) targetWorld.boostPadCooldown--;
+  if (targetWorld.hazardCooldown > 0) targetWorld.hazardCooldown--;
+  if (targetWorld.rechargeCooldown > 0) targetWorld.rechargeCooldown--;
 }
 
 function resolveCollision(targetWorld, playAudio) {
@@ -327,7 +408,7 @@ function resolveCollision(targetWorld, playAudio) {
     targetWorld.speed = Math.sqrt(targetWorld.vx * targetWorld.vx + targetWorld.vy * targetWorld.vy);
   }
 
-  if (!playAudio || targetWorld.wallCooldown > 0) return;
+  if (!playAudio || targetWorld.wallCooldown > 0) return true;
   const damage = 0.08 * Math.min(1, Math.abs(impactDot) / TOP_SPEED);
   targetWorld.energy = Math.max(0, targetWorld.energy - damage);
   targetWorld.wallCooldown = 20;
@@ -336,6 +417,37 @@ function resolveCollision(targetWorld, playAudio) {
     triggerPlayerCrash();
   }
   return true;
+}
+
+function updateTrackZones() {
+  const boostZone = findTrackZoneAtPoint(track, world.x, world.y, 'boost');
+  if (boostZone && world.boostPadCooldown <= 0) {
+    applyBoost(world, boostZone.impulse ?? 240);
+    world.boostPadCooldown = 50;
+    audio.onBoostPad();
+    showZoneFeedback('BOOST', '#00FFFF');
+  }
+
+  const hazardZone = findTrackZoneAtPoint(track, world.x, world.y, 'hazard');
+  if (hazardZone && world.hazardCooldown <= 0) {
+    world.energy = Math.max(0, world.energy - (hazardZone.damage ?? 0.06));
+    world.hazardCooldown = 90;
+    audio.onHazard();
+    showZoneFeedback('DANGER', '#FF3000', 760);
+    if (world.energy <= 0) {
+      triggerPlayerCrash();
+    }
+  }
+
+  const rechargeZone = findTrackZoneAtPoint(track, world.x, world.y, 'recharge');
+  if (rechargeZone && world.rechargeCooldown <= 0 && world.energy < 1) {
+    world.energy = Math.min(1, world.energy + (rechargeZone.amount ?? 0.03));
+    world.rechargeCooldown = 22;
+    audio.onRecharge();
+    showZoneFeedback('RECOVERY', '#66FF00', 720);
+  }
+
+  return { boostZone, hazardZone, rechargeZone };
 }
 
 function prepareExtras(includeWorld) {
@@ -436,10 +548,21 @@ function loop(timestamp) {
     requestAnimationFrame(loop);
     return;
   }
-  if (!collided) {
+  if (world.wallCooldown > 0) world.wallCooldown--;
+  updateZoneCooldowns(world);
+  const zoneState = updateTrackZones();
+  if (gameState === 'crashed') {
+    updateCamera(camera, world, dt);
+    renderScene(false);
+    drawHUD(hudCtx, currentScale, lapState, world, track);
+    drawCrashOverlay(hudCtx, currentScale, world, crashState);
+    perfEnd();
+    requestAnimationFrame(loop);
+    return;
+  }
+  if (!collided && !zoneState.hazardZone) {
     lastSafeState = { x: world.x, y: world.y, heading: world.heading };
   }
-  if (world.wallCooldown > 0) world.wallCooldown--;
   updateCamera(camera, world, dt);
   updateLap(lapState, track, prevX, prevY, world.x, world.y);
   if (config.enableEffects) updateExhaustTrail(playerTrail, world, dt);
@@ -469,7 +592,7 @@ function loop(timestamp) {
   }
 
   renderScene(true);
-  drawHUD(hudCtx, currentScale, lapState, world, track);
+  drawHUD(hudCtx, currentScale, lapState, world, track, zoneFeedback);
 
   perfEnd();
   requestAnimationFrame(loop);
