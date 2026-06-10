@@ -2,7 +2,7 @@
 
 Velocity-16 is an original browser-based futuristic racer inspired by the speed, readability, and attitude of classic Mode 7 racing games. The project is not a clone: the goal is to build its own ships, pilots, tracks, audio identity, UI language, and 2026 HD art direction while preserving the immediate thrill of high-speed hover racing.
 
-The current build is a recovered and stabilized gameplay baseline: a solo feel lab track, tuned hover handling, readable HD Mode 7 camera, energy damage, crash recovery, audio feedback, minimap, and feature flags for experimental race systems.
+The current build is a recovered and stabilized gameplay baseline: a solo feel lab track, tuned hover handling, readable HD Mode 7 camera, boost pads, hazard fields, recharge strips, energy damage, crash recovery, audio feedback, minimap, and feature flags for experimental race systems.
 
 ## Current State
 
@@ -13,10 +13,12 @@ The project is currently in the **Stabilize Feel** milestone.
 - HD Mode 7 canvas renderer with neon track texture and projected guide rails
 - Smooth hover physics with acceleration, braking, drift, wall bounce, boost, and low-speed steering assist
 - Clean HUD with lap timer, speed, energy, best lap, and minimap
-- Energy damage from wall impacts
+- Boost pads, hazard zones, recovery strips, and on-screen zone feedback
+- Energy damage from wall impacts and hazard fields
 - Machine explosion at zero energy
-- Automatic respawn near the last safe track position
+- Automatic respawn near the last safe non-hazard track position
 - Retro-future synth audio for engine hum, boost, wall hits, laps, race start, and crash
+- Optional F3 debug overlay for tuning speed, energy, zones, checkpoints, camera values, and cooldowns
 - Experimental AI, countdown, podium, trails, starfield, and speed-line effects preserved behind flags
 
 ## Controls
@@ -26,6 +28,7 @@ The project is currently in the **Stabilize Feel** milestone.
 - `A` or `ArrowLeft`: steer left
 - `D` or `ArrowRight`: steer right
 - `Space`: boost
+- `F3`: toggle the dev tuning overlay
 - Say `boost` if voice boost is enabled and supported by the browser
 
 ## Dev Setup
@@ -58,11 +61,12 @@ The default build keeps the main loop clean and playable. Experimental systems c
 - `?podium=1`
 - `?effects=1`
 - `?voice=0`
+- `?debug=1`
 
 Example:
 
 ```text
-http://127.0.0.1:5174/?effects=1&ai=1
+http://127.0.0.1:5174/?effects=1&debug=1
 ```
 
 ## Roadmap
@@ -73,12 +77,13 @@ This phase is now mostly complete. The game has a reliable playable baseline, cl
 
 ### Phase 1: Feel Lab
 
-Next up: continue tuning handling and mechanical feedback.
+Current focus: continue tuning the feel lab until every core mechanic is readable, fair, and satisfying.
 
-- Tune boost pads, hazards, braking, drift recovery, wall impacts, and respawn values
-- Add small dev tools or query toggles for faster handling iteration
-- Refine damage rules for walls, hazards, and future racer contact
+- Tune boost pads, hazards, recovery strips, braking, drift recovery, wall impacts, and respawn values
+- Use the debug overlay for faster handling and zone iteration
+- Refine damage and recovery rules for walls, hazards, and future racer contact
 - Improve high-speed visual effects without cluttering the screen
+- Add checkpoint direction feedback and wrong-way detection
 
 ### Phase 2: First Official Track
 

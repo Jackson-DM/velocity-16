@@ -126,6 +126,9 @@ let frameCount = 0;
 let wasBoost = false;
 let lastSafeState = null;
 let zoneFeedback = null;
+let debugOverlayEnabled = config.enableDebug;
+let currentFps = 0;
+let currentZoneState = { boostZone: null, hazardZone: null, rechargeZone: null };
 
 snapCameraToStart();
 lastSafeState = { x: world.x, y: world.y, heading: world.heading };
@@ -195,6 +198,12 @@ function startRace() {
 }
 
 window.addEventListener('keydown', (event) => {
+  if (event.code === 'F3') {
+    debugOverlayEnabled = !debugOverlayEnabled;
+    event.preventDefault();
+    return;
+  }
+
   ensureAudio();
   if (event.repeat && (gameState === 'title' || gameState === 'podium' || gameState === 'crashed')) return;
 
@@ -447,7 +456,51 @@ function updateTrackZones() {
     showZoneFeedback('RECOVERY', '#66FF00', 720);
   }
 
-  return { boostZone, hazardZone, rechargeZone };
+  currentZoneState = { boostZone, hazardZone, rechargeZone };
+  return currentZoneState;
+}
+
+function formatZoneLabel(zoneState = currentZoneState) {
+  if (zoneState?.hazardZone) return `HAZ ${zoneState.hazardZone.id ?? '-'}`;
+  if (zoneState?.rechargeZone) return `REC ${zoneState.rechargeZone.id ?? '-'}`;
+  if (zoneState?.boostZone) return `BST ${zoneState.boostZone.id ?? '-'}`;
+  return 'NONE';
+}
+
+function buildDebugOverlay(zoneState = currentZoneState) {
+  if (!debugOverlayEnabled) return null;
+
+  const coord = getTrackCoord(track, world.x, world.y);
+  const cooldownText = [
+    world.boostPadCooldown ?? 0,
+    world.hazardCooldown ?? 0,
+    world.rechargeCooldown ?? 0,
+  ].join('/');
+
+  const zoneColor = zoneState?.hazardZone
+    ? '#FF3030'
+    : zoneState?.rechargeZone
+      ? '#66FF00'
+      : zoneState?.boostZone
+        ? '#00FFFF'
+        : '#888888';
+
+  return {
+    enabled: true,
+    rows: [
+      { text: `STATE ${gameState}`, color: '#FFFFFF' },
+      { text: `FPS ${currentFps}` },
+      { text: `SPD ${Math.round(world.speed)}` },
+      { text: `ENG ${Math.round(world.energy * 100)}%`, color: world.energy < 0.25 ? '#FF3030' : '#00FF40' },
+      { text: `ZONE ${formatZoneLabel(zoneState)}`, color: zoneColor },
+      { text: `LAP ${Math.min(lapState.lap + 1, lapState.totalLaps)}/${lapState.totalLaps} CP ${lapState.nextCp}` },
+      { text: `A ${coord.angle.toFixed(2)} D ${coord.d.toFixed(2)}` },
+      { text: `XY ${Math.round(world.x)},${Math.round(world.y)}` },
+      { text: `HDG ${world.heading.toFixed(2)}` },
+      { text: `CAM ${Math.round(camera.height)} F${camera.fov.toFixed(2)}` },
+      { text: `CD ${cooldownText}` },
+    ],
+  };
 }
 
 function prepareExtras(includeWorld) {
@@ -485,6 +538,7 @@ function loop(timestamp) {
   const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.05);
   lastTimestamp = timestamp;
   frameCount++;
+  currentFps = dt > 0 ? Math.round(1 / dt) : 0;
 
   if (gameState === 'title') {
     renderScene(false);
@@ -526,7 +580,7 @@ function loop(timestamp) {
       return;
     }
     renderScene(false);
-    drawHUD(hudCtx, currentScale, lapState, world, track);
+    drawHUD(hudCtx, currentScale, lapState, world, track, zoneFeedback, buildDebugOverlay());
     drawCrashOverlay(hudCtx, currentScale, world, crashState);
     perfEnd();
     requestAnimationFrame(loop);
@@ -542,7 +596,7 @@ function loop(timestamp) {
   if (gameState === 'crashed') {
     updateCamera(camera, world, dt);
     renderScene(false);
-    drawHUD(hudCtx, currentScale, lapState, world, track);
+    drawHUD(hudCtx, currentScale, lapState, world, track, zoneFeedback, buildDebugOverlay());
     drawCrashOverlay(hudCtx, currentScale, world, crashState);
     perfEnd();
     requestAnimationFrame(loop);
@@ -554,7 +608,7 @@ function loop(timestamp) {
   if (gameState === 'crashed') {
     updateCamera(camera, world, dt);
     renderScene(false);
-    drawHUD(hudCtx, currentScale, lapState, world, track);
+    drawHUD(hudCtx, currentScale, lapState, world, track, zoneFeedback, buildDebugOverlay(zoneState));
     drawCrashOverlay(hudCtx, currentScale, world, crashState);
     perfEnd();
     requestAnimationFrame(loop);
@@ -592,7 +646,7 @@ function loop(timestamp) {
   }
 
   renderScene(true);
-  drawHUD(hudCtx, currentScale, lapState, world, track, zoneFeedback);
+  drawHUD(hudCtx, currentScale, lapState, world, track, zoneFeedback, buildDebugOverlay(zoneState));
 
   perfEnd();
   requestAnimationFrame(loop);

@@ -33,7 +33,7 @@ function fmtTime(ms) {
   return `${mins}:${p2(secs)}.${p2(cents)}`;
 }
 
-export function drawHUD(hudCtx, scale, lapState, world, track = null, feedback = null) {
+export function drawHUD(hudCtx, scale, lapState, world, track = null, feedback = null, debug = null) {
   const W = hudCtx.canvas.width;
   const H = hudCtx.canvas.height;
 
@@ -131,6 +131,10 @@ export function drawHUD(hudCtx, scale, lapState, world, track = null, feedback =
   if (feedback && feedback.untilMs > nowMs) {
     drawZoneFeedback(hudCtx, scale, W, H, feedback, nowMs);
   }
+
+  if (debug?.enabled) {
+    drawDebugPanel(hudCtx, scale, W, debug);
+  }
 }
 
 function drawZoneFeedback(ctx, scale, W, H, feedback, nowMs) {
@@ -148,6 +152,42 @@ function drawZoneFeedback(ctx, scale, W, H, feedback, nowMs) {
   ctx.shadowBlur = Math.max(3, scale * 2);
   ctx.fillStyle = feedback.color;
   ctx.fillText(feedback.text, W / 2, y);
+  ctx.restore();
+}
+
+function drawDebugPanel(ctx, scale, W, debug) {
+  const margin = Math.round(4 * scale);
+  const x = W - Math.round(88 * scale) - margin;
+  const y = Math.round(60 * scale);
+  const w = Math.round(88 * scale);
+  const lineH = Math.round(7 * scale);
+  const rows = debug.rows ?? [];
+  const h = Math.round((rows.length + 2) * lineH + 5 * scale);
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.72)';
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = 'rgba(0, 255, 255, 0.75)';
+  ctx.lineWidth = Math.max(1, scale * 0.5);
+  ctx.strokeRect(x, y, w, h);
+
+  ctx.font = `bold ${Math.round(5 * scale)}px "Courier New", monospace`;
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+  ctx.shadowColor = '#000';
+  ctx.shadowBlur = Math.max(1, scale);
+
+  let py = y + Math.round(3 * scale);
+  ctx.fillStyle = '#00FFFF';
+  ctx.fillText('DEBUG F3', x + Math.round(3 * scale), py);
+  py += lineH + Math.round(2 * scale);
+
+  for (const row of rows) {
+    ctx.fillStyle = row.color ?? '#FFFF00';
+    ctx.fillText(row.text, x + Math.round(3 * scale), py);
+    py += lineH;
+  }
+
   ctx.restore();
 }
 

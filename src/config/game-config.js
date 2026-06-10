@@ -7,6 +7,7 @@ const DEFAULT_CONFIG = {
   enablePodium: false,
   enableVoiceBoost: true,
   enableEffects: false,
+  enableDebug: false,
   trackMode: 'test',
 };
 
@@ -30,6 +31,7 @@ export function getGameConfig() {
     enablePodium: readBoolParam(params, 'podium', DEFAULT_CONFIG.enablePodium),
     enableVoiceBoost: readBoolParam(params, 'voice', DEFAULT_CONFIG.enableVoiceBoost),
     enableEffects: readBoolParam(params, 'effects', DEFAULT_CONFIG.enableEffects),
+    enableDebug: readBoolParam(params, 'debug', DEFAULT_CONFIG.enableDebug),
     trackMode: readTrackMode(params, DEFAULT_CONFIG.trackMode),
   };
 }
