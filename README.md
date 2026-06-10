@@ -14,6 +14,7 @@ The project is currently in the **Stabilize Feel** milestone.
 - Smooth hover physics with acceleration, braking, drift, wall bounce, boost, and low-speed steering assist
 - Clean HUD with lap timer, speed, energy, best lap, and minimap
 - Boost pads, hazard zones, recovery strips, and on-screen zone feedback
+- Checkpoint direction arrow and wrong-way warning feedback
 - Energy damage from wall impacts and hazard fields
 - Machine explosion at zero energy
 - Automatic respawn near the last safe non-hazard track position
@@ -83,7 +84,7 @@ Current focus: continue tuning the feel lab until every core mechanic is readabl
 - Use the debug overlay for faster handling and zone iteration
 - Refine damage and recovery rules for walls, hazards, and future racer contact
 - Improve high-speed visual effects without cluttering the screen
-- Add checkpoint direction feedback and wrong-way detection
+- Tune checkpoint direction and wrong-way feedback after playtesting
 
 ### Phase 2: First Official Track
 

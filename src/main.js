@@ -12,6 +12,7 @@ import { buildCarSprite } from './graphics/sprites.js';
 import { drawCrashOverlay, drawHUD } from './graphics/hud.js';
 import { getTrackByMode } from './track/track-data.js';
 import {
+  angleDelta,
   findTrackZoneAtPoint,
   findTrackZoneNearCoord,
   getTrackCoord,
@@ -129,6 +130,7 @@ let zoneFeedback = null;
 let debugOverlayEnabled = config.enableDebug;
 let currentFps = 0;
 let currentZoneState = { boostZone: null, hazardZone: null, rechargeZone: null };
+let raceGuidance = null;
 
 snapCameraToStart();
 lastSafeState = { x: world.x, y: world.y, heading: world.heading };
@@ -227,6 +229,13 @@ const GO_DURATION = 0.60;
 const RESPAWN_EDGE_MARGIN = 0.16;
 const RESPAWN_HAZARD_ANGLE_MARGIN = 0.09;
 const RESPAWN_HAZARD_RADIAL_MARGIN = 0.10;
+const WRONG_WAY_MIN_SPEED = 65;
+const WRONG_WAY_DOT = -0.45;
+const WRONG_WAY_TRIGGER_SECONDS = 0.45;
+
+const guidanceState = {
+  wrongWaySeconds: 0,
+};
 
 function updateCountdownPhase(state, dt) {
   state.elapsed += dt;
@@ -467,6 +476,43 @@ function formatZoneLabel(zoneState = currentZoneState) {
   return 'NONE';
 }
 
+function updateRaceGuidance(dt) {
+  if (lapState.lap >= lapState.totalLaps || gameState !== 'playing') {
+    guidanceState.wrongWaySeconds = 0;
+    raceGuidance = null;
+    return raceGuidance;
+  }
+
+  const coord = getTrackCoord(track, world.x, world.y);
+  const tangentX = -track.bounds.a * Math.sin(coord.angle);
+  const tangentY = track.bounds.b * Math.cos(coord.angle);
+  const tangentLen = Math.max(0.001, Math.sqrt(tangentX * tangentX + tangentY * tangentY));
+  const forwardX = tangentX / tangentLen;
+  const forwardY = tangentY / tangentLen;
+  const speed = Math.max(0.001, world.speed);
+  const forwardDot = (world.vx * forwardX + world.vy * forwardY) / speed;
+  const movingWrongWay = world.speed > WRONG_WAY_MIN_SPEED && forwardDot < WRONG_WAY_DOT;
+
+  guidanceState.wrongWaySeconds = movingWrongWay
+    ? Math.min(2, guidanceState.wrongWaySeconds + dt)
+    : Math.max(0, guidanceState.wrongWaySeconds - dt * 1.8);
+
+  const targetCp = track.checkpoints[lapState.nextCp] ?? track.checkpoints[0];
+  const dx = targetCp.cx - world.x;
+  const dy = targetCp.cy - world.y;
+  const targetAngle = Math.atan2(dy, dx);
+
+  raceGuidance = {
+    wrongWay: guidanceState.wrongWaySeconds >= WRONG_WAY_TRIGGER_SECONDS,
+    wrongWayCharge: Math.min(1, guidanceState.wrongWaySeconds / WRONG_WAY_TRIGGER_SECONDS),
+    nextCheckpoint: lapState.nextCp,
+    targetAngle: angleDelta(targetAngle, camera.angle),
+    targetDistance: Math.sqrt(dx * dx + dy * dy),
+    forwardDot,
+  };
+  return raceGuidance;
+}
+
 function buildDebugOverlay(zoneState = currentZoneState) {
   if (!debugOverlayEnabled) return null;
 
@@ -493,6 +539,7 @@ function buildDebugOverlay(zoneState = currentZoneState) {
       { text: `SPD ${Math.round(world.speed)}` },
       { text: `ENG ${Math.round(world.energy * 100)}%`, color: world.energy < 0.25 ? '#FF3030' : '#00FF40' },
       { text: `ZONE ${formatZoneLabel(zoneState)}`, color: zoneColor },
+      { text: `WAY ${raceGuidance?.wrongWay ? 'BAD' : 'OK'} ${raceGuidance?.forwardDot?.toFixed(2) ?? '0.00'}`, color: raceGuidance?.wrongWay ? '#FF3030' : '#00FF40' },
       { text: `LAP ${Math.min(lapState.lap + 1, lapState.totalLaps)}/${lapState.totalLaps} CP ${lapState.nextCp}` },
       { text: `A ${coord.angle.toFixed(2)} D ${coord.d.toFixed(2)}` },
       { text: `XY ${Math.round(world.x)},${Math.round(world.y)}` },
@@ -580,7 +627,7 @@ function loop(timestamp) {
       return;
     }
     renderScene(false);
-    drawHUD(hudCtx, currentScale, lapState, world, track, zoneFeedback, buildDebugOverlay());
+    drawHUD(hudCtx, currentScale, lapState, world, track, zoneFeedback, buildDebugOverlay(), null);
     drawCrashOverlay(hudCtx, currentScale, world, crashState);
     perfEnd();
     requestAnimationFrame(loop);
@@ -596,7 +643,7 @@ function loop(timestamp) {
   if (gameState === 'crashed') {
     updateCamera(camera, world, dt);
     renderScene(false);
-    drawHUD(hudCtx, currentScale, lapState, world, track, zoneFeedback, buildDebugOverlay());
+    drawHUD(hudCtx, currentScale, lapState, world, track, zoneFeedback, buildDebugOverlay(), null);
     drawCrashOverlay(hudCtx, currentScale, world, crashState);
     perfEnd();
     requestAnimationFrame(loop);
@@ -608,7 +655,7 @@ function loop(timestamp) {
   if (gameState === 'crashed') {
     updateCamera(camera, world, dt);
     renderScene(false);
-    drawHUD(hudCtx, currentScale, lapState, world, track, zoneFeedback, buildDebugOverlay(zoneState));
+    drawHUD(hudCtx, currentScale, lapState, world, track, zoneFeedback, buildDebugOverlay(zoneState), null);
     drawCrashOverlay(hudCtx, currentScale, world, crashState);
     perfEnd();
     requestAnimationFrame(loop);
@@ -617,8 +664,9 @@ function loop(timestamp) {
   if (!collided && !zoneState.hazardZone) {
     lastSafeState = { x: world.x, y: world.y, heading: world.heading };
   }
-  updateCamera(camera, world, dt);
   updateLap(lapState, track, prevX, prevY, world.x, world.y);
+  updateCamera(camera, world, dt);
+  updateRaceGuidance(dt);
   if (config.enableEffects) updateExhaustTrail(playerTrail, world, dt);
 
   audio.update(world.speed, dt);
@@ -646,7 +694,7 @@ function loop(timestamp) {
   }
 
   renderScene(true);
-  drawHUD(hudCtx, currentScale, lapState, world, track, zoneFeedback, buildDebugOverlay(zoneState));
+  drawHUD(hudCtx, currentScale, lapState, world, track, zoneFeedback, buildDebugOverlay(zoneState), raceGuidance);
 
   perfEnd();
   requestAnimationFrame(loop);

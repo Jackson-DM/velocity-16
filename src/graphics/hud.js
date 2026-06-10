@@ -33,7 +33,7 @@ function fmtTime(ms) {
   return `${mins}:${p2(secs)}.${p2(cents)}`;
 }
 
-export function drawHUD(hudCtx, scale, lapState, world, track = null, feedback = null, debug = null) {
+export function drawHUD(hudCtx, scale, lapState, world, track = null, feedback = null, debug = null, guidance = null) {
   const W = hudCtx.canvas.width;
   const H = hudCtx.canvas.height;
 
@@ -128,6 +128,10 @@ export function drawHUD(hudCtx, scale, lapState, world, track = null, feedback =
   hudCtx.strokeRect(barX - 1, barY - 1, barW + 2, barH + 2);
   hudCtx.restore();
 
+  if (guidance && !finished) {
+    drawRaceGuidance(hudCtx, scale, W, H, guidance, nowMs);
+  }
+
   if (feedback && feedback.untilMs > nowMs) {
     drawZoneFeedback(hudCtx, scale, W, H, feedback, nowMs);
   }
@@ -135,6 +139,64 @@ export function drawHUD(hudCtx, scale, lapState, world, track = null, feedback =
   if (debug?.enabled) {
     drawDebugPanel(hudCtx, scale, W, debug);
   }
+}
+
+function drawRaceGuidance(ctx, scale, W, H, guidance, nowMs) {
+  const cx = Math.round(W / 2);
+  const cy = Math.round(H * 0.34);
+  const arrowSize = Math.round(9 * scale);
+  const pulse = 0.65 + 0.35 * Math.sin(nowMs * 0.012);
+  const arrowColor = guidance.wrongWay ? '#FF3030' : '#00FFFF';
+  const labelColor = guidance.wrongWay ? '#FFFF00' : '#FFD000';
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(guidance.targetAngle);
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.shadowColor = arrowColor;
+  ctx.shadowBlur = Math.max(3, scale * 2);
+  ctx.strokeStyle = arrowColor;
+  ctx.lineWidth = Math.max(1, scale);
+  ctx.beginPath();
+  ctx.arc(0, 0, Math.round(arrowSize * 0.95), 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.fillStyle = arrowColor;
+  ctx.beginPath();
+  ctx.moveTo(0, -arrowSize);
+  ctx.lineTo(Math.round(arrowSize * 0.62), Math.round(arrowSize * 0.52));
+  ctx.lineTo(0, Math.round(arrowSize * 0.20));
+  ctx.lineTo(-Math.round(arrowSize * 0.62), Math.round(arrowSize * 0.52));
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.font = `bold ${Math.round(5 * scale)}px "Courier New", monospace`;
+  ctx.shadowColor = '#000';
+  ctx.shadowBlur = Math.max(2, scale);
+  ctx.fillStyle = labelColor;
+  const gate = guidance.nextCheckpoint === 0 ? 'START' : `CP ${guidance.nextCheckpoint}`;
+  ctx.fillText(gate, cx, cy + Math.round(arrowSize * 1.25));
+
+  if (guidance.wrongWay) {
+    const bannerY = Math.round(H * 0.43);
+    const textPulse = pulse > 0.82 ? '#FFFFFF' : '#FF3030';
+    ctx.font = `bold ${Math.round(11 * scale)}px "Courier New", monospace`;
+    ctx.fillStyle = textPulse;
+    ctx.shadowColor = '#FF0000';
+    ctx.shadowBlur = Math.max(4, scale * 3);
+    ctx.fillText('WRONG WAY', cx, bannerY);
+    ctx.font = `bold ${Math.round(6 * scale)}px "Courier New", monospace`;
+    ctx.fillStyle = '#FFFF00';
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = Math.max(2, scale);
+    ctx.fillText('FOLLOW CHECKPOINT ARROW', cx, bannerY + Math.round(13 * scale));
+  }
+
+  ctx.restore();
 }
 
 function drawZoneFeedback(ctx, scale, W, H, feedback, nowMs) {
