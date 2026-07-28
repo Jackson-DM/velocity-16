@@ -141,6 +141,72 @@ function renderEnergyChase(buffer, W, H, camera, track, frame, color) {
   }
 }
 
+function drawProjectedSign(buffer, W, H, sign, colors) {
+  const { p, type } = sign;
+  const postHeight = Math.max(5, Math.min(24, Math.round(1800 / p.fwd)));
+  const panelW = Math.max(5, Math.min(17, Math.round(1200 / p.fwd)));
+  const panelH = Math.max(3, Math.min(9, Math.round(panelW * 0.54)));
+  const centerY = p.y - postHeight;
+  const left = p.x - panelW;
+  const right = p.x + panelW;
+  const top = centerY - panelH;
+  const bottom = centerY + panelH;
+  const accent = type === 'hazard'
+    ? colors.hazard
+    : type === 'recharge'
+      ? colors.recharge
+      : colors.boost;
+
+  for (let y = p.y; y >= bottom; y--) {
+    drawDot(buffer, W, H, p.x, y, colors.post, p.fwd < 240 ? 1 : 0);
+  }
+
+  for (let y = top; y <= bottom; y++) {
+    fillSpan(buffer, W, H, y, left, right, y === top || y === bottom ? accent : colors.panel);
+    if (y > top && y < bottom) {
+      drawDot(buffer, W, H, left, y, accent, 0);
+      drawDot(buffer, W, H, right, y, accent, 0);
+    }
+  }
+
+  const iconLeft = left + 2;
+  const iconRight = right - 2;
+  const iconTop = top + 2;
+  const iconBottom = bottom - 2;
+  if (type === 'hazard') {
+    drawLine(buffer, W, H, { x: iconLeft, y: iconTop }, { x: iconRight, y: iconBottom }, accent);
+    drawLine(buffer, W, H, { x: iconRight, y: iconTop }, { x: iconLeft, y: iconBottom }, accent);
+  } else if (type === 'recharge') {
+    const barWidth = Math.max(1, Math.floor((iconRight - iconLeft - 2) / 3));
+    for (let i = 0; i < 3; i++) {
+      const x0 = iconLeft + i * (barWidth + 1);
+      for (let y = iconTop; y <= iconBottom; y++) {
+        fillSpan(buffer, W, H, y, x0, x0 + barWidth - 1, accent);
+      }
+    }
+  } else {
+    const midY = Math.round((iconTop + iconBottom) * 0.5);
+    const midX = Math.round((iconLeft + iconRight) * 0.5);
+    drawLine(buffer, W, H, { x: iconLeft, y: iconTop }, { x: midX, y: midY }, accent);
+    drawLine(buffer, W, H, { x: midX, y: midY }, { x: iconLeft, y: iconBottom }, accent);
+    drawLine(buffer, W, H, { x: midX, y: iconTop }, { x: iconRight, y: midY }, accent);
+    drawLine(buffer, W, H, { x: iconRight, y: midY }, { x: midX, y: iconBottom }, accent);
+  }
+}
+
+function renderTrackSigns(buffer, W, H, camera, track, colors) {
+  const projected = [];
+  for (const sign of track.signs ?? []) {
+    const x = track.bounds.cx + track.bounds.a * sign.d * Math.cos(sign.angle);
+    const y = track.bounds.cy + track.bounds.b * sign.d * Math.sin(sign.angle);
+    const p = projectPoint(x, y, camera, W, H);
+    if (p) projected.push({ ...sign, p });
+  }
+
+  projected.sort((a, b) => b.p.fwd - a.p.fwd);
+  for (const sign of projected) drawProjectedSign(buffer, W, H, sign, colors);
+}
+
 function scaleColor(color, amount) {
   const r = Math.round((color & 0xFF) * amount);
   const g = Math.round(((color >> 8) & 0xFF) * amount);
@@ -283,9 +349,17 @@ export function renderTrackGuideRails(buffer, W, H, camera, track, frame = 0) {
     cool: colorFromHex(theme.cityLightCool, outerPosts),
     warm: colorFromHex(theme.cityLightWarm, innerPosts),
   };
+  const signColors = {
+    panel: colorFromHex(theme.voidInner, PALETTE.BLACK),
+    post: colorFromHex(theme.outerPosts, PALETTE.WHITE),
+    boost: colorFromHex(theme.boostA, PALETTE.NEON_CYAN),
+    hazard: colorFromHex(theme.hazardA, PALETTE.NEON_MAGENTA),
+    recharge: colorFromHex(theme.rechargeA, PALETTE.NEON_GREEN),
+  };
 
   if (theme.id === 'aurora-causeway') {
     renderInfieldPlant(buffer, W, H, camera, track, frame, cityColors);
+    renderTrackSigns(buffer, W, H, camera, track, signColors);
   }
 
   renderEllipse(buffer, W, H, camera, track.bounds, track.bounds.dOuter, outer);

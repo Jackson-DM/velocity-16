@@ -48,6 +48,7 @@ function createOvalTrack({
   bounds,
   checkpointHalfWidth,
   zones = [],
+  signs = [],
   theme = null,
 }) {
   return {
@@ -61,6 +62,7 @@ function createOvalTrack({
     startHeading: 0,
     checkpoints: DEFAULT_ANGLES.map((angle) => makeCheckpoint(bounds, angle, checkpointHalfWidth)),
     zones,
+    signs,
     theme,
   };
 }
@@ -224,6 +226,14 @@ export const TRACK_01 = createOvalTrack({
       dMax: 0.875,
       impulse: 285,
     },
+  ],
+  signs: [
+    { id: 'launch-crown-warning', type: 'boost', angle: -1.39, d: 1.145, side: 'outer' },
+    { id: 'storm-cut-outer-warning', type: 'hazard', angle: 0.34, d: 1.145, side: 'outer' },
+    { id: 'storm-cut-inner-warning', type: 'hazard', angle: 0.62, d: 0.755, side: 'inner' },
+    { id: 'mercy-rail-warning', type: 'recharge', angle: 1.47, d: 1.145, side: 'outer' },
+    { id: 'needle-gate-warning', type: 'hazard', angle: 2.72, d: 1.145, side: 'outer' },
+    { id: 'needle-boost-warning', type: 'boost', angle: -3.04, d: 0.755, side: 'inner' },
   ],
   theme: {
     id: 'aurora-causeway',

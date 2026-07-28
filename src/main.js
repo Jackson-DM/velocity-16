@@ -98,6 +98,7 @@ const AI_CONFIGS = [
     handling: 0.55,
     weight: 1.8,
     aggression: 0.88,
+    preferredLane: 1.035,
     primaryColor: '#FF4500',
     accentColor: '#FFFF00',
     _startOffset: 40,
@@ -110,6 +111,7 @@ const AI_CONFIGS = [
     handling: 0.80,
     weight: 1.0,
     aggression: 0.95,
+    preferredLane: 0.86,
     primaryColor: '#FF00FF',
     accentColor: '#00FFFF',
     zeroDragDrift: true,
@@ -530,6 +532,29 @@ function updateTrackZones() {
   return currentZoneState;
 }
 
+function updateAiTrackZones(ai) {
+  const { world: aiWorld } = ai;
+  updateZoneCooldowns(aiWorld);
+
+  const boostZone = findTrackZoneAtPoint(track, aiWorld.x, aiWorld.y, 'boost');
+  if (boostZone && aiWorld.boostPadCooldown <= 0) {
+    applyBoost(aiWorld, (boostZone.impulse ?? 240) * 0.82);
+    aiWorld.boostPadCooldown = 50;
+  }
+
+  const hazardZone = findTrackZoneAtPoint(track, aiWorld.x, aiWorld.y, 'hazard');
+  if (hazardZone && aiWorld.hazardCooldown <= 0) {
+    aiWorld.energy = Math.max(0.15, aiWorld.energy - (hazardZone.damage ?? 0.06));
+    aiWorld.hazardCooldown = 90;
+  }
+
+  const rechargeZone = findTrackZoneAtPoint(track, aiWorld.x, aiWorld.y, 'recharge');
+  if (rechargeZone && aiWorld.rechargeCooldown <= 0 && aiWorld.energy < 1) {
+    aiWorld.energy = Math.min(1, aiWorld.energy + (rechargeZone.amount ?? 0.03));
+    aiWorld.rechargeCooldown = 22;
+  }
+}
+
 function formatZoneLabel(zoneState = currentZoneState) {
   if (zoneState?.hazardZone) return `HAZ ${zoneState.hazardZone.id ?? '-'}`;
   if (zoneState?.rechargeZone) return `REC ${zoneState.rechargeZone.id ?? '-'}`;
@@ -629,11 +654,12 @@ function updateAi(dt) {
 
   for (const ai of aiWorlds) {
     if (ai.finishPosition !== null) continue;
-    const aiInput = updateAiDriver(ai.driver, ai.world);
+    const aiInput = updateAiDriver(ai.driver, ai.world, dt);
     const aiPrevX = ai.world.x;
     const aiPrevY = ai.world.y;
     updateAiHover(ai.world, aiInput, dt, ai.config);
     resolveCollision(ai.world, false);
+    updateAiTrackZones(ai);
     updateLap(ai.lapState, track, aiPrevX, aiPrevY, ai.world.x, ai.world.y);
     if (config.enableEffects) updateExhaustTrail(ai.trail, ai.world, dt);
     checkAiFinish(ai);

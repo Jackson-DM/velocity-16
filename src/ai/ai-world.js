@@ -6,6 +6,7 @@ import { createLapState }            from '../track/lap.js';
 import { createAiDriver }            from './ai-driver.js';
 import { buildAiSprite }             from '../graphics/ai-sprites.js';
 import { createExhaustTrail }        from '../graphics/exhaust-trail.js';
+import { pointFromTrackCoord }       from '../track/track-zones.js';
 
 // ─── createAiWorld ────────────────────────────────────────────────────────────
 // track  — track definition (same shape as TRACK_01)
@@ -22,10 +23,16 @@ export function createAiWorld(track, config) {
     drift:       0,
     energy:      1.0,
     wallCooldown: 0,
+    boostPadCooldown: 0,
+    hazardCooldown: 0,
+    rechargeCooldown: 0,
   };
 
-  // Stagger starting positions slightly so cars don't overlap at race start
-  // (offset along the track's start heading direction)
+  // Give each rival its own grid lane, then stagger it behind the player.
+  const startLane = config.preferredLane ?? 1;
+  const startPoint = pointFromTrackCoord(track, -Math.PI / 2, startLane);
+  world.x = startPoint.x;
+  world.y = startPoint.y;
   const offsetDist = config._startOffset || 0;
   world.x += Math.cos(track.startHeading + Math.PI) * offsetDist;
   world.y += Math.sin(track.startHeading + Math.PI) * offsetDist;
