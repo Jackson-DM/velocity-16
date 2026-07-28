@@ -1,5 +1,5 @@
-// Projected neon guide rails for analytical oval tracks.
-// These are gameplay-readable wall markers, not collision geometry.
+// Projected neon guide rails and Aurora's 2.5D infield architecture.
+// These are gameplay-readable world markers, not collision geometry.
 
 import { PALETTE } from './palette.js';
 
@@ -141,22 +141,94 @@ function renderEnergyChase(buffer, W, H, camera, track, frame, color) {
   }
 }
 
-function drawTower(buffer, W, H, p, height, bodyColor, lightColor, width = 0) {
-  for (let py = p.y; py >= p.y - height; py--) {
-    drawDot(buffer, W, H, p.x, py, bodyColor, width);
-  }
-  drawDot(buffer, W, H, p.x, p.y - height, lightColor, Math.max(1, width));
+function scaleColor(color, amount) {
+  const r = Math.round((color & 0xFF) * amount);
+  const g = Math.round(((color >> 8) & 0xFF) * amount);
+  const b = Math.round(((color >> 16) & 0xFF) * amount);
+  return (0xFF000000 | (b << 16) | (g << 8) | r) >>> 0;
 }
 
-function renderInfieldPlant(buffer, W, H, camera, track, frame, coolColor, warmColor) {
-  const { bounds } = track;
-  const towerRings = [
-    { d: 0.34, count: 8, height: 900, offset: 0.10 },
-    { d: 0.55, count: 12, height: 650, offset: -0.06 },
-    { d: 0.70, count: 16, height: 480, offset: 0.03 },
-  ];
+function fillSpan(buffer, W, H, y, x0, x1, color) {
+  if (y < 0 || y >= H) return;
+  const start = Math.max(0, x0);
+  const end = Math.min(W - 1, x1);
+  const row = y * W;
+  for (let x = start; x <= end; x++) buffer[row + x] = color;
+}
 
-  for (const ring of towerRings) {
+function drawBuildingSprite(buffer, W, H, structure, frame, colors) {
+  const { p, heightPx, widthPx, seed } = structure;
+  const topY = p.y - heightPx;
+  const body = seed & 1 ? colors.bodyA : colors.bodyB;
+  const side = scaleColor(body, 0.56);
+  const roof = seed % 3 === 0 ? colors.warm : colors.cool;
+  const pulseOn = ((Math.floor(frame / 18) + seed) & 3) === 0;
+
+  for (let row = 0; row <= heightPx; row++) {
+    const y = topY + row;
+    const t = row / Math.max(1, heightPx);
+    const halfWidth = Math.max(1, Math.round(widthPx * (0.34 + t * 0.16)));
+    fillSpan(buffer, W, H, y, p.x - halfWidth, p.x + halfWidth, body);
+    if (y < 0 || y >= H) continue;
+
+    if (p.x - halfWidth >= 0) buffer[y * W + p.x - halfWidth] = side;
+    if (p.x + halfWidth < W) buffer[y * W + p.x + halfWidth] = side;
+
+    if (row > 2 && row < heightPx - 2 && row % 4 === seed % 4) {
+      for (let x = p.x - halfWidth + 2; x <= p.x + halfWidth - 2; x += 4) {
+        if (x >= 0 && x < W && ((x + seed) & 2) === 0) {
+          buffer[y * W + x] = pulseOn ? colors.warm : colors.cool;
+        }
+      }
+    }
+  }
+
+  fillSpan(buffer, W, H, topY, p.x - Math.max(1, Math.round(widthPx * 0.34)), p.x + Math.max(1, Math.round(widthPx * 0.34)), roof);
+  drawDot(buffer, W, H, p.x, p.y, scaleColor(roof, 0.72), Math.max(1, Math.round(widthPx * 0.20)));
+}
+
+function drawReactorSprite(buffer, W, H, structure, frame, colors) {
+  const { p, heightPx, widthPx } = structure;
+  const topY = p.y - heightPx;
+  const body = colors.core;
+  const side = scaleColor(body, 0.48);
+
+  for (let row = 0; row <= heightPx; row++) {
+    const y = topY + row;
+    const t = row / Math.max(1, heightPx);
+    const waist = Math.sin(t * Math.PI);
+    const halfWidth = Math.max(2, Math.round(widthPx * (0.34 + t * 0.20 - waist * 0.08)));
+    fillSpan(buffer, W, H, y, p.x - halfWidth, p.x + halfWidth, body);
+    if (y < 0 || y >= H) continue;
+
+    if (p.x - halfWidth >= 0) buffer[y * W + p.x - halfWidth] = side;
+    if (p.x + halfWidth < W) buffer[y * W + p.x + halfWidth] = side;
+    if (row % 5 === 0) {
+      fillSpan(buffer, W, H, y, p.x - halfWidth + 1, p.x + halfWidth - 1, colors.cool);
+    } else if (p.x >= 0 && p.x < W) {
+      buffer[y * W + p.x] = colors.warm;
+    }
+  }
+
+  const capY = topY - 2;
+  fillSpan(buffer, W, H, capY, p.x - Math.max(2, Math.round(widthPx * 0.46)), p.x + Math.max(2, Math.round(widthPx * 0.46)), colors.cool);
+  for (let y = capY - 1; y >= Math.max(1, capY - Math.min(10, Math.round(heightPx * 0.25))); y--) {
+    drawDot(buffer, W, H, p.x, y, colors.warm, 0);
+  }
+  drawDot(buffer, W, H, p.x, capY - Math.min(10, Math.round(heightPx * 0.25)), colors.cool, 1 + ((frame >> 4) & 1));
+}
+
+function renderInfieldPlant(buffer, W, H, camera, track, frame, colors) {
+  const { bounds } = track;
+  const structureRings = [
+    { d: 0.26, count: 6, height: 112, width: 48, offset: 0.10 },
+    { d: 0.44, count: 10, height: 86, width: 42, offset: -0.06 },
+    { d: 0.62, count: 14, height: 64, width: 34, offset: 0.03 },
+  ];
+  const structures = [];
+
+  for (let ringIndex = 0; ringIndex < structureRings.length; ringIndex++) {
+    const ring = structureRings[ringIndex];
     for (let i = 0; i < ring.count; i++) {
       const angle = (i / ring.count) * Math.PI * 2 + ring.offset;
       const x = bounds.cx + bounds.a * ring.d * Math.cos(angle);
@@ -164,18 +236,34 @@ function renderInfieldPlant(buffer, W, H, camera, track, frame, coolColor, warmC
       const p = projectPoint(x, y, camera, W, H);
       if (!p) continue;
 
-      const height = Math.max(2, Math.min(13, Math.round(ring.height / p.fwd)));
-      const light = ((i + Math.floor(frame / 24)) & 3) === 0 ? warmColor : coolColor;
-      drawTower(buffer, W, H, p, height, PALETTE.DEEP_BLUE, light, p.fwd < 210 ? 1 : 0);
+      structures.push({
+        kind: 'building',
+        p,
+        seed: ringIndex * 19 + i * 7,
+        heightPx: Math.max(6, Math.min(38, Math.round(ring.height * 112 / p.fwd))),
+        widthPx: Math.max(3, Math.min(24, Math.round(ring.width * 96 / p.fwd))),
+      });
     }
   }
 
   const core = projectPoint(bounds.cx, bounds.cy, camera, W, H);
   if (core) {
-    const coreHeight = Math.max(8, Math.min(24, Math.round(2600 / core.fwd)));
-    drawTower(buffer, W, H, core, coreHeight, PALETTE.DEEP_PURPLE, coolColor, core.fwd < 260 ? 2 : 1);
-    const pulseRadius = 1 + ((frame >> 4) & 1);
-    drawDot(buffer, W, H, core.x, core.y - coreHeight, warmColor, pulseRadius);
+    structures.push({
+      kind: 'reactor',
+      p: core,
+      seed: 999,
+      heightPx: Math.max(18, Math.min(48, Math.round(180 * 116 / core.fwd))),
+      widthPx: Math.max(7, Math.min(28, Math.round(72 * 100 / core.fwd))),
+    });
+  }
+
+  structures.sort((a, b) => b.p.fwd - a.p.fwd);
+  for (const structure of structures) {
+    if (structure.kind === 'reactor') {
+      drawReactorSprite(buffer, W, H, structure, frame, colors);
+    } else {
+      drawBuildingSprite(buffer, W, H, structure, frame, colors);
+    }
   }
 }
 
@@ -188,9 +276,16 @@ export function renderTrackGuideRails(buffer, W, H, camera, track, frame = 0) {
   const center = colorFromHex(theme.centerGuide, PALETTE.GOLD);
   const outerPosts = colorFromHex(theme.outerPosts, PALETTE.WHITE);
   const innerPosts = colorFromHex(theme.innerPosts, PALETTE.NEON_YELLOW);
+  const cityColors = {
+    bodyA: colorFromHex(theme.roadPanel, PALETTE.DEEP_BLUE),
+    bodyB: colorFromHex(theme.skyline, PALETTE.DEEP_PURPLE),
+    core: colorFromHex(theme.skyBottom, PALETTE.DEEP_PURPLE),
+    cool: colorFromHex(theme.cityLightCool, outerPosts),
+    warm: colorFromHex(theme.cityLightWarm, innerPosts),
+  };
 
   if (theme.id === 'aurora-causeway') {
-    renderInfieldPlant(buffer, W, H, camera, track, frame, outerPosts, innerPosts);
+    renderInfieldPlant(buffer, W, H, camera, track, frame, cityColors);
   }
 
   renderEllipse(buffer, W, H, camera, track.bounds, track.bounds.dOuter, outer);
