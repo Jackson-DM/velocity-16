@@ -32,7 +32,24 @@ import { drawCountdown } from './graphics/countdown-overlay.js';
 import { drawPodiumScreen } from './graphics/podium-screen.js';
 
 const config = getGameConfig();
-const track = getTrackByMode(config.trackMode);
+const COURSE_OPTIONS = [
+  {
+    mode: 'test',
+    name: 'FEEL LAB 02',
+    description: 'SYSTEMS TEST COURSE',
+    accent: '#00FF80',
+    secondary: '#00FFFF',
+  },
+  {
+    mode: 'official',
+    name: 'AURORA CAUSEWAY',
+    description: 'OFFICIAL COURSE 01',
+    accent: '#00D9FF',
+    secondary: '#FF9D1A',
+  },
+];
+let selectedCourseIndex = Math.max(0, COURSE_OPTIONS.findIndex((course) => course.mode === config.trackMode));
+let track = getTrackByMode(COURSE_OPTIONS[selectedCourseIndex].mode);
 
 const canvas = document.getElementById('game');
 const hudCanvas = document.getElementById('hud');
@@ -56,7 +73,16 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
-const floorTexture = buildCircuitTexture(track);
+const trackTextureCache = new Map();
+function getFloorTexture(selectedTrack) {
+  const key = selectedTrack.textureKey ?? selectedTrack.name;
+  if (!trackTextureCache.has(key)) {
+    trackTextureCache.set(key, buildCircuitTexture(selectedTrack));
+  }
+  return trackTextureCache.get(key);
+}
+
+let floorTexture = getFloorTexture(track);
 const starfield = config.enableEffects ? buildStarfield(80) : null;
 const carSprite = buildCarSprite();
 const renderer = createRenderer(canvas, carSprite);
@@ -189,6 +215,19 @@ function resetRace(toTitle = true) {
   snapCameraToStart();
 }
 
+function selectCourse(index) {
+  selectedCourseIndex = (index + COURSE_OPTIONS.length) % COURSE_OPTIONS.length;
+  const course = COURSE_OPTIONS[selectedCourseIndex];
+  track = getTrackByMode(course.mode);
+  floorTexture = getFloorTexture(track);
+
+  const url = new URL(window.location.href);
+  url.searchParams.set('track', course.mode);
+  window.history.replaceState({}, '', url);
+
+  resetRace(true);
+}
+
 function startRace() {
   raceStartMs = performance.now();
   lapState.lapStart = raceStartMs;
@@ -210,6 +249,25 @@ window.addEventListener('keydown', (event) => {
   if (event.repeat && (gameState === 'title' || gameState === 'podium' || gameState === 'crashed')) return;
 
   if (gameState === 'title') {
+    const previousCourse = event.code === 'ArrowUp'
+      || event.code === 'ArrowLeft'
+      || event.code === 'KeyA';
+    const nextCourse = event.code === 'ArrowDown'
+      || event.code === 'ArrowRight'
+      || event.code === 'KeyD';
+    const confirmCourse = event.code === 'Enter'
+      || event.code === 'NumpadEnter'
+      || event.code === 'Space';
+
+    if (previousCourse || nextCourse) {
+      selectCourse(selectedCourseIndex + (nextCourse ? 1 : -1));
+      event.preventDefault();
+      return;
+    }
+
+    if (!confirmCourse) return;
+    event.preventDefault();
+
     if (config.enableCountdown) {
       gameState = 'countdown';
       countdownState = { phase: 'pilot_card', elapsed: 0, pilotIndex: 0, beepFired: false };
@@ -218,6 +276,9 @@ window.addEventListener('keydown', (event) => {
     }
   } else if (gameState === 'podium') {
     resetRace(true);
+  } else if (event.code === 'Escape' || (lapState.lap >= lapState.totalLaps && event.code === 'Enter')) {
+    resetRace(true);
+    event.preventDefault();
   }
 });
 window.addEventListener('pointerdown', ensureAudio);
@@ -589,7 +650,10 @@ function loop(timestamp) {
 
   if (gameState === 'title') {
     renderScene(false);
-    drawTitleScreen(hudCtx, currentScale, frameCount, track.name);
+    drawTitleScreen(hudCtx, currentScale, frameCount, {
+      courses: COURSE_OPTIONS,
+      selectedIndex: selectedCourseIndex,
+    });
     perfEnd();
     requestAnimationFrame(loop);
     return;

@@ -315,25 +315,30 @@ function drawMiniMap(ctx, scale, W, track, world) {
   const outerRy = mapH * 0.40;
   const innerRx = outerRx * (bounds.dInner / bounds.dOuter);
   const innerRy = outerRy * (bounds.dInner / bounds.dOuter);
+  const mapOuter = track.theme?.outerEdge ?? MAP_CYAN;
+  const mapInner = track.theme?.innerEdge ?? MAP_MAGENTA;
+  const mapPlayer = track.theme?.centerGuide ?? MAP_GOLD;
 
   ctx.save();
-  ctx.strokeStyle = 'rgba(0,255,255,0.28)';
+  ctx.strokeStyle = track.theme?.id === 'aurora-causeway'
+    ? 'rgba(255,231,163,0.24)'
+    : 'rgba(0,255,255,0.28)';
   ctx.lineWidth = Math.max(1, scale * 0.5);
   ctx.strokeRect(x, y, mapW, mapH);
 
   ctx.beginPath();
   ctx.ellipse(cx, cy, outerRx, outerRy, 0, 0, Math.PI * 2);
-  ctx.strokeStyle = MAP_CYAN;
+  ctx.strokeStyle = mapOuter;
   ctx.stroke();
 
   ctx.beginPath();
   ctx.ellipse(cx, cy, innerRx, innerRy, 0, 0, Math.PI * 2);
-  ctx.strokeStyle = MAP_MAGENTA;
+  ctx.strokeStyle = mapInner;
   ctx.stroke();
 
   const px = cx + ((world.x - bounds.cx) / (bounds.a * bounds.dOuter)) * outerRx;
   const py = cy + ((world.y - bounds.cy) / (bounds.b * bounds.dOuter)) * outerRy;
-  ctx.fillStyle = MAP_GOLD;
+  ctx.fillStyle = mapPlayer;
   ctx.fillRect(Math.round(px - scale), Math.round(py - scale), Math.max(2, scale * 2), Math.max(2, scale * 2));
 
   const noseX = px + Math.cos(world.heading) * Math.max(4, scale * 4);

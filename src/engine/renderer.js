@@ -77,11 +77,11 @@ export function createRenderer(canvas, carSprite = null) {
     render(camera, floorTexture, world = null, frame = 0, extras = {}) {
       const { starfield = null, aiWorlds = [], track = null, enableSpeedLines = false } = extras;
 
-      renderSky(buffer, W, camera.horizon, starfield, frame);
+      renderSky(buffer, W, camera.horizon, starfield, frame, track, camera);
       renderFloor(buffer, W, H, camera, floorTexture);
 
       if (track) {
-        renderTrackGuideRails(buffer, W, H, camera, track);
+        renderTrackGuideRails(buffer, W, H, camera, track, frame);
       }
 
       // Exhaust trails — rendered before sprites so ships occlude them
